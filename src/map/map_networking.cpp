@@ -528,6 +528,11 @@ int32 MapNetworking::parse(uint8* buff, size_t* buffsize, MapSession* PSession)
 
     if (ref<uint16>(buff, 2) != PSession->server_packet_id)
     {
+        if (PSession->isPS2Client && ps2::tracing())
+        {
+            ShowInfoFmt("ps2 trace: client acked {}, server is at {}: resending the last datagram", ref<uint16>(buff, 2), PSession->server_packet_id);
+        }
+
         // If the client and server have become out of sync, then caching takes place. However, caching
         // zone packets will result in the client never properly connecting. Ignore those specifically.
         if (SmallPD_Type == static_cast<uint16>(PacketC2S::GP_CLI_COMMAND_LOGIN))
@@ -568,6 +573,7 @@ int32 MapNetworking::send_parse(uint8* buff, size_t* buffsize, MapSession* PSess
     size_t PacketSize               = static_cast<size_t>(UINT32_MAX);
     size_t PacketCount              = std::clamp<size_t>(PChar->getPacketCount(), 0, kMaxPacketPerCompression);
     uint8  packets                  = 0;
+    uint8  consumed                 = 0; // taken off the queue: packets plus those the PS2 translation dropped
     bool   incrementKeyAfterEncrypt = false;
 
     mapStatistics_.increment(MapStatistics::Key::TotalPacketsToSendPerTick, static_cast<uint32>(PChar->getPacketCount()));
@@ -584,6 +590,7 @@ int32 MapNetworking::send_parse(uint8* buff, size_t* buffsize, MapSession* PSess
 
             *buffsize = FFXI_HEADER_SIZE;
             packets   = 0;
+            consumed  = 0;
 
             auto packetList = [&]
             {
@@ -592,10 +599,11 @@ int32 MapNetworking::send_parse(uint8* buff, size_t* buffsize, MapSession* PSess
                 return PChar->getPacketListCopy();
             }();
 
-            while (!packetList.empty() && *buffsize + packetList.front()->getSize() < kMaxBufferSize && static_cast<size_t>(packets) < PacketCount)
+            while (!packetList.empty() && *buffsize + packetList.front()->getSize() < kMaxBufferSize && static_cast<size_t>(consumed) < PacketCount && consumed < UINT8_MAX)
             {
                 PSmallPacket = std::move(packetList.front());
                 packetList.pop_front();
+                consumed++;
 
                 PSmallPacket->setSequence(PSession->server_packet_id);
                 auto type = PSmallPacket->getType();
@@ -626,8 +634,10 @@ int32 MapNetworking::send_parse(uint8* buff, size_t* buffsize, MapSession* PSess
                 }
 
                 // packetList is a fresh copy on every attempt, so translating in place is safe
+                // A dropped packet still counts as consumed, or it (and what follows) would be sent again.
                 if (PSession->isPS2Client && ps2::translateS2C(PSession, *PSmallPacket) == ps2::Result::Drop)
                 {
+                    std::ignore = ps2::takeEmittedS2C();
                     continue;
                 }
 
@@ -687,7 +697,7 @@ int32 MapNetworking::send_parse(uint8* buff, size_t* buffsize, MapSession* PSess
         }
     } while (PacketSize == static_cast<uint32>(-1));
 
-    PChar->erasePackets(packets);
+    PChar->erasePackets(consumed);
 
     mapStatistics_.increment(MapStatistics::Key::TotalPacketsSentPerTick, static_cast<uint32>(packets));
     TracyZoneString(fmt::format("Sending {} packets", packets));

@@ -56,6 +56,9 @@ auto isPS2Platform(const uint8* sPlatform) -> bool;
 
 auto isPS2(const MapSession* PSession) -> bool;
 
+// XI_PS2_TRACE=1 in the environment logs every PS2 packet (and resend), for debugging the translation.
+auto tracing() -> bool;
+
 // Rewrites one outgoing packet for a PS2 session. Never called for other sessions.
 auto translateS2C(MapSession* PSession, CBasicPacket& packet) -> Result;
 

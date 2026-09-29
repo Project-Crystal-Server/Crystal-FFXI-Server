@@ -23,10 +23,13 @@
 #include "ps2_entities.h"
 #include "ps2_groups.h"
 
+#include "common/logging.h"
+
 #include "map_session.h"
 #include "packets/basic.h"
 
 #include <array>
+#include <cstdlib>
 #include <cstring>
 #include <utility>
 
@@ -137,14 +140,14 @@ auto clientHandles(const uint16 id) -> bool
     return id < kIdCount && tables().handled[id];
 }
 
-auto translateS2C(MapSession* PSession, CBasicPacket& packet) -> Result
+namespace
 {
-    auto&      t  = registered();
-    const auto id = packet.getType();
 
-    // A translator may re-id a packet the 2010 client knows under another id (0x068 pet sync is
-    // its 0x067 sub-type 4), so it runs before the unhandled-id drop, and the result is checked again.
-    auto result = Result::Pass;
+auto translateS2CImpl(MapSession* PSession, CBasicPacket& packet) -> Result
+{
+    auto&      t      = registered();
+    const auto id     = packet.getType();
+    auto       result = Result::Pass;
 
     // A translator may re-id a packet the 2010 client knows under another id (0x068 pet sync is
     // its 0x067 sub-type 4), so it runs before the unhandled-id drop, which is checked on the result.
@@ -161,7 +164,7 @@ auto translateS2C(MapSession* PSession, CBasicPacket& packet) -> Result
     return combine(result, remapEntitiesS2C(PSession, packet));
 }
 
-auto translateC2S(MapSession* PSession, CBasicPacket& packet) -> Result
+auto translateC2SImpl(MapSession* PSession, CBasicPacket& packet) -> Result
 {
     auto& t      = registered();
     auto  result = Result::Pass;
@@ -177,6 +180,48 @@ auto translateC2S(MapSession* PSession, CBasicPacket& packet) -> Result
     }
 
     return combine(result, remapEntitiesC2S(PSession, packet));
+}
+
+auto resultName(const Result r) -> const char*
+{
+    return r == Result::Drop ? "drop" : r == Result::Rewritten ? "rewritten" : "pass";
+}
+
+} // namespace
+
+auto tracing() -> bool
+{
+    static const bool on = []
+    {
+        const char* v = std::getenv("XI_PS2_TRACE");
+        return v != nullptr && *v != '\0' && *v != '0';
+    }();
+    return on;
+}
+
+auto translateS2C(MapSession* PSession, CBasicPacket& packet) -> Result
+{
+    const auto id     = packet.getType();
+    const auto size   = packet.getSize();
+    const auto result = translateS2CImpl(PSession, packet);
+    if (tracing())
+    {
+        ShowInfoFmt("ps2 trace: s2c {:03X} size {:03X} seq {} -> {} {:03X} size {:03X}", id, size, packet.getSequence(), resultName(result),
+                    packet.getType(), result == Result::Drop ? 0 : packet.getSize());
+    }
+    return result;
+}
+
+auto translateC2S(MapSession* PSession, CBasicPacket& packet) -> Result
+{
+    const auto id     = packet.getType();
+    const auto size   = packet.getSize();
+    const auto result = translateC2SImpl(PSession, packet);
+    if (tracing() && id != 0x015) // position: several a second
+    {
+        ShowInfoFmt("ps2 trace: c2s {:03X} size {:03X} -> {}", id, size, resultName(result));
+    }
+    return result;
 }
 
 } // namespace ps2
