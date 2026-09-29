@@ -599,7 +599,7 @@ int32 MapNetworking::send_parse(uint8* buff, size_t* buffsize, MapSession* PSess
                 return PChar->getPacketListCopy();
             }();
 
-            while (!packetList.empty() && *buffsize + packetList.front()->getSize() < kMaxBufferSize && static_cast<size_t>(consumed) < PacketCount && consumed < UINT8_MAX)
+            while (!packetList.empty() && *buffsize + packetList.front()->getSize() < kMaxBufferSize && static_cast<size_t>(packets) < PacketCount && consumed < UINT8_MAX)
             {
                 PSmallPacket = std::move(packetList.front());
                 packetList.pop_front();
@@ -634,7 +634,8 @@ int32 MapNetworking::send_parse(uint8* buff, size_t* buffsize, MapSession* PSess
                 }
 
                 // packetList is a fresh copy on every attempt, so translating in place is safe
-                // A dropped packet still counts as consumed, or it (and what follows) would be sent again.
+                // A dropped packet still counts as consumed, or it (and what follows) would be sent again;
+                // only what goes in the datagram counts against PacketCount (a PS2 zone-in drops dozens).
                 if (PSession->isPS2Client && ps2::translateS2C(PSession, *PSmallPacket) == ps2::Result::Drop)
                 {
                     std::ignore = ps2::takeEmittedS2C();
