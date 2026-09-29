@@ -28,6 +28,7 @@
 #include "entities/char_entity.h"
 
 #include "packets/basic.h"
+#include "packets/ps2/ps2_client.h"
 #include "packets/s2c/0x00b_logout.h"
 
 #include "utils/charutils.h"
@@ -276,6 +277,9 @@ int32 MapNetworking::recv_parse(uint8* buff, size_t* buffsize, MapSession* PSess
             return -1;
         }
 
+        // The retail PS2 client names itself here; its packets are translated from now on (packets/ps2)
+        PSession->isPS2Client = ps2::isPS2Platform(loginPacket.sPlatform);
+
         // We can only get here if an 0x00A (not encrypted) packet was here.
         // If we were pending zones, delete our old char
         if (PSession->blowfish.status == BLOWFISH_PENDING_ZONE)
@@ -459,6 +463,12 @@ int32 MapNetworking::parse(uint8* buff, size_t* buffsize, MapSession* PSession)
             // Reuse one CBasicPacket (parseScratchPacket_) across the loop instead of re-allocating per inbound packet.
             // We're copying in and bounding only exactly what we want, so it's safe.
             std::memcpy(&parseScratchPacket_.ref<uint8>(0), SmallPD_ptr, PACKET_SIZE);
+
+            if (PSession->isPS2Client && ps2::translateC2S(PSession, parseScratchPacket_) == ps2::Result::Drop)
+            {
+                continue;
+            }
+
             ShowTraceFmt("map::parse: Char: {} ({}): {}", PChar->getName(), PChar->id, hex16ToString(parseScratchPacket_.getType()));
             packetSystem_.dispatch(SmallPD_Type, PSession, PChar, parseScratchPacket_);
         }
@@ -588,6 +598,12 @@ int32 MapNetworking::send_parse(uint8* buff, size_t* buffsize, MapSession* PSess
                         // This probably isn't necessary - the session should be deleted shortly.
                         db::preparedStmt("UPDATE accounts_sessions SET client_port = 0, last_zoneout_time = NOW() WHERE charid = ?", PSession->charID);
                     }
+                }
+
+                // packetList is a fresh copy on every attempt, so translating in place is safe
+                if (PSession->isPS2Client && ps2::translateS2C(PSession, *PSmallPacket) == ps2::Result::Drop)
+                {
+                    continue;
                 }
 
                 std::memcpy(buff + *buffsize, *PSmallPacket, PSmallPacket->getSize());

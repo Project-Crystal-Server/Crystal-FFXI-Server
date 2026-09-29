@@ -1,6 +1,9 @@
 add_subdirectory(c2s)
 add_subdirectory(s2c)
 
+# Retail PS2 client translation (packets/ps2/ps2_client.h)
+file(GLOB PACKET_PS2_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/ps2/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/ps2/*.h)
+
 set(PACKET_C2S_SOURCES
     ${PACKET_C2S_SOURCES}
     PARENT_SCOPE
@@ -21,5 +24,6 @@ set(PACKET_S2C_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/entity_update.h
     ${CMAKE_CURRENT_SOURCE_DIR}/pet_sync.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/pet_sync.h
+    ${PACKET_PS2_SOURCES}
     PARENT_SCOPE
 )

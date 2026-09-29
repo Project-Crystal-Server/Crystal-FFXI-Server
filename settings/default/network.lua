@@ -20,7 +20,9 @@ xi.settings.network =
     LOGIN_DATA_IP   = '0.0.0.0',
     LOGIN_DATA_PORT = 54230,
     LOGIN_VIEW_IP   = '0.0.0.0',
-    LOGIN_VIEW_PORT = 54001,
+    -- 54001 belongs to the Project Crystal lobby: PlayOnline clients (PS2 and PC) cannot be pointed
+    -- anywhere else. xiloader can: launch it with --viewport 54004.
+    LOGIN_VIEW_PORT = 54004,
     LOGIN_AUTH_IP   = '0.0.0.0',
     LOGIN_AUTH_PORT = 54231,
 

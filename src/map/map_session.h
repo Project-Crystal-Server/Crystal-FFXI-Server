@@ -59,6 +59,7 @@ struct MapSession
     uint32                       next_zone_id       = 0;
     bool                         forceLinkDead      = false; // Don't allow last_update tap if forced to die
     bool                         hasDecryptedPacket = false; // used to check if the client still needs an 0x00A
+    bool                         isPS2Client        = false; // sPlatform "PS2" in the 0x00A: packets are translated (packets/ps2)
 
     // Store old blowfish data, when a player recieves 0x00B their key should increment
     // If it doesn't, and we can still successfully decrypt here, that means we need to resend 0x00B.
