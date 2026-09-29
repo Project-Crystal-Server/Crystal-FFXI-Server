@@ -345,10 +345,25 @@ auto extendedJob(MapSession* /* PSession */, CBasicPacket& packet) -> Result
     return Result::Rewritten;
 }
 
+// 0x033 TRADE_RES: the 2010 client has three builders, FUN_0038B7A0 (Kind 0, accept the request),
+// FUN_0038B840 (Kind 1, cancel) and FUN_0038B8E0 (Kind 3, the "Trade" button). Today 3 is
+// MakeCancell, which LSB ignores, and confirming is Make (2), so a PS2 player could never complete a
+// trade. The 2010 client has no builder for today's Make/MakeCancell otherwise, so 3 -> 2 is safe.
+auto tradeRes(MapSession*, CBasicPacket& packet) -> Result
+{
+    if (packet.ref<uint32>(0x04) != 3)
+    {
+        return Result::Pass;
+    }
+    packet.ref<uint32>(0x04) = 2;
+    return Result::Rewritten;
+}
+
 } // namespace
 
 void registerC2S()
 {
+    registerC2S(0x033, &tradeRes);
     registerC2S(0x01A, &action);
     registerC2S(0x01B, &friendPass);
     registerC2S(0x01E, &gm);
