@@ -28,6 +28,7 @@
 
 #include <array>
 #include <cstring>
+#include <utility>
 
 namespace ps2
 {
@@ -111,6 +112,24 @@ void registerS2C(const uint16 id, const Translator fn)
 void registerC2S(const uint16 id, const Translator fn)
 {
     tables().c2s[id & 0x1FF] = fn;
+}
+
+namespace
+{
+
+// send_parse runs on the map's network thread; translators and the send loop share it.
+thread_local std::vector<std::vector<uint8>> tEmitted;
+
+} // namespace
+
+void emitS2C(const uint8* packet, const size_t size)
+{
+    tEmitted.emplace_back(packet, packet + size);
+}
+
+auto takeEmittedS2C() -> std::vector<std::vector<uint8>>
+{
+    return std::exchange(tEmitted, {});
 }
 
 auto clientHandles(const uint16 id) -> bool

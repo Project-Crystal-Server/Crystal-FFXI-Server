@@ -120,19 +120,34 @@ auto magicData(MapSession*, CBasicPacket& packet) -> Result
 }
 
 // 0x0AC COMMAND_DATA: B handler RecvCommandData 0x44A410 copies 0x80 bytes from +0x04 into
-// zone+0x1D8B4, read back by FUN_0044A330 / FUN_004649F0 as ONE bitfield of 0x400 ability-table
-// indices (the menu at 0x494E20 looks each bit up in the 0x30-byte ability entries). In the 2010
-// ability table the index is the ability id: 0x000-0x1FF job abilities (Fight 0x45, Deploy 0x8A...),
-// 0x200-0x3FF blood pacts / ready / maneuvers (Healing Ruby 0x200).
-// Today: WeaponSkills[64] +0x04, JobAbilities[64] +0x44 (ids 0..511), PetAbilities[64] +0x84
-// (id - 512), Traits[32] +0xC4. So 2010 = JobAbilities ++ PetAbilities; weapon skills and traits
-// have no place in this packet.
+// zone+0x1D8B4: ONE bitfield of 0x400 indices into the client's ability file (file id 85, 1024
+// records of 0x400 bytes; byte-identical in the 2010 PS2 install and today's PC install). Decoded,
+// record n is:
+//   0x000-0x1FF  menu commands 1-15 (Ranged, Weapon Abilities, Fish...), then job abilities by LSB
+//                ability id (Mighty Strikes 16, Provoke 35, Fight 69, Deploy 138)
+//   0x200-0x2FF  pet abilities, LSB ability id (Healing Ruby 512, Poison Nails 513)
+//   0x300-0x3FF  weapon skills, 0x300 + LSB weapon skill id (Combo 769, Starlight 931)
+// Today: WeaponSkills[64] +0x04 (bit = ws id), JobAbilities[64] +0x44 (bit = ability id),
+// PetAbilities[64] +0x84 (bit = ability id - 512), Traits[32] +0xC4 (bit = trait id).
+// So the 2010 table is JobAbilities[0..63] ++ PetAbilities[0..31] ++ WeaponSkills[0..31]; pet
+// ability bits 256+ and weapon skill bits 256+ have no place in it.
+//
+// The traits go to the 2010 client's own 0x0AB FEAT_DATA (RecvFeatData 0x44A3C0: 0x14 bytes from +0x04
+// into zone+0x1D8A0, right before the command table), bit = trait id as today; LSB keeps 18 bytes.
 auto commandData(MapSession*, CBasicPacket& packet) -> Result
 {
     Rewrite rw(packet);
+
+    CBasicPacket feat;
+    feat.setType(0x0AB);
+    feat.setSize(0x04 + 0x14);
+    std::memcpy(static_cast<uint8*>(feat) + 0x04, rw.src + 0xC4, 0x14);
+    emitS2C(feat, feat.getSize());
+
     rw.clear(0x04 + 0x80);
-    rw.move(0x44, 0x04, 0x40);
-    rw.move(0x84, 0x44, 0x40);
+    rw.move(0x44, 0x04, 0x40); // job abilities: bits 0x000-0x1FF
+    rw.move(0x84, 0x44, 0x20); // pet abilities 512..767: bits 0x200-0x2FF
+    rw.move(0x04, 0x64, 0x20); // weapon skills 0..255: bits 0x300-0x3FF
     return Result::Rewritten;
 }
 

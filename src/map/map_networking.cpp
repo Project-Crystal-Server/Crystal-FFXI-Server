@@ -636,6 +636,21 @@ int32 MapNetworking::send_parse(uint8* buff, size_t* buffsize, MapSession* PSess
                 *buffsize += PSmallPacket->getSize();
 
                 packets++;
+
+                // A PS2 translator may have split the packet in two (packets/ps2/ps2_client.h emitS2C)
+                if (PSession->isPS2Client)
+                {
+                    for (auto& extra : ps2::takeEmittedS2C())
+                    {
+                        if (extra.size() < 4 || *buffsize + extra.size() >= kMaxBufferSize)
+                        {
+                            break; // resent with the next copy of the original packet
+                        }
+                        ref<uint16>(extra.data(), 2) = PSmallPacket->getSequence();
+                        std::memcpy(buff + *buffsize, extra.data(), extra.size());
+                        *buffsize += extra.size();
+                    }
+                }
             }
 
             PacketCount -= PacketCount / 3;

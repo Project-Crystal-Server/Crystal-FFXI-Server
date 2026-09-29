@@ -23,6 +23,8 @@
 
 #include "common/cbasetypes.h"
 
+#include <vector>
+
 // Support for the retail PS2 client (SCUS-97266, patch 20100904_2).
 //
 // The client names itself with sPlatform "PS2" in its unencrypted 0x00A. For such a session every
@@ -59,6 +61,13 @@ auto translateS2C(MapSession* PSession, CBasicPacket& packet) -> Result;
 
 // Rewrites one incoming packet from a PS2 session before it is dispatched.
 auto translateC2S(MapSession* PSession, CBasicPacket& packet) -> Result;
+
+// A translator that has to turn one of today's packets into two for the 2010 client (0x0AC carries
+// the traits the 2010 client takes in its own 0x0AB) queues the second one here. send_parse sends it
+// right after the translated packet, in the same datagram and with the same sequence number.
+// The packet must already be in the 2010 layout (it is not translated again).
+void emitS2C(const uint8* packet, size_t size);
+auto takeEmittedS2C() -> std::vector<std::vector<uint8>>;
 
 // Used by the group files (ps2_s2c_*.cpp, ps2_c2s_*.cpp) from their register functions.
 void registerS2C(uint16 id, Translator fn);
