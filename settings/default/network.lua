@@ -31,6 +31,8 @@ xi.settings.network =
     SEARCH_PORT = 54002,
 
     PROFILE_PORT = 51220,
+    -- polcore dials 51240 for IRC; move it only together with the loader (xiloader --ircport).
+    PROFILE_IRC_PORT = 51240,
 
     -- DB queries will attempt each query once, and reconnect and retry up to `SQL_QUERY_RETRY_COUNT` times.
     SQL_QUERY_RETRY_COUNT = 1,

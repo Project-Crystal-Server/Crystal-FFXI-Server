@@ -43,9 +43,6 @@ constexpr auto   kHandshakeDeadline  = 10s;
 constexpr auto   kRefreshInterval    = 1h;
 constexpr uint16 kConnectionsPerPeer = 16;
 
-// hardcoded in polcore
-constexpr uint16 kIrcPort = 51240;
-
 } // namespace
 
 ProfileEngine::ProfileEngine(Scheduler& scheduler)
@@ -72,7 +69,9 @@ ProfileEngine::ProfileEngine(Scheduler& scheduler)
                return profile::runProfileSession(std::move(stream), std::move(peer), credential.accountId, presence_);
            });
 
-    listen(kIrcPort,
+    // polcore dials 51240 for IRC; a relaying loader (xiloader) can point it at another server port
+    const auto ircPort = settings::get<uint16>("network.PROFILE_IRC_PORT");
+    listen(ircPort,
            [this](profile::Stream stream, std::string peer, const profile::accounts::Credential credential)
            {
                return profile::runIrcSession(std::move(stream), std::move(peer), credential, presence_);
@@ -84,7 +83,7 @@ ProfileEngine::ProfileEngine(Scheduler& scheduler)
                                                         presence_.refreshCredentials();
                                                     });
 
-    ShowInfoFmt("listening on {} (profile) and {} (irc)", profilePort, kIrcPort);
+    ShowInfoFmt("listening on {} (profile) and {} (irc)", profilePort, ircPort);
 }
 
 ProfileEngine::~ProfileEngine() = default;
