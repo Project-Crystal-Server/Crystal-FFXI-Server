@@ -45,6 +45,12 @@ auto hasZone(uint16 zoneId) -> bool;
 // MesNum in 0x027/0x02A/0x036: bit 15 is a display flag, the low 15 bits the dialog line.
 auto mesNum(uint16 zoneId, uint16 mesNum) -> std::optional<uint16>;
 
+// Does the 2010 install have this item? Its item DATs hold a record for every id of the ranges they
+// cover, and items added since are "." placeholders there, so an id counts only with a real name
+// (tools/item_map.py -> res/ps2/items.bin). Item 0 (no item) and gil are always known. Without the
+// map every item is known (nothing is filtered).
+auto hasItem(uint16 itemId) -> bool;
+
 // Static entities (NPCs, mobs, doors: UniqueNo 0x01000000 | zone << 12 | index, ActIndex = index).
 // The zone's name list in the 2010 DATs has entities inserted since, so indices shift. The map is
 // aligned on the names (tools/entity_map.py -> res/ps2/entity_map.bin). Anything that is not a static

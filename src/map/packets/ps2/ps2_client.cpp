@@ -22,6 +22,7 @@
 #include "ps2_client.h"
 #include "ps2_entities.h"
 #include "ps2_groups.h"
+#include "ps2_items.h"
 
 #include "common/logging.h"
 
@@ -157,6 +158,12 @@ auto translateS2CImpl(MapSession* PSession, CBasicPacket& packet) -> Result
     }
 
     if (result == Result::Drop || !t.handled[packet.getType()])
+    {
+        return Result::Drop;
+    }
+
+    result = combine(result, filterItemsS2C(PSession, packet));
+    if (result == Result::Drop)
     {
         return Result::Drop;
     }

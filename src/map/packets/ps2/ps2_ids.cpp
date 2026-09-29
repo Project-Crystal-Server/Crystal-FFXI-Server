@@ -142,6 +142,32 @@ auto hasZone(const uint16 zoneId) -> bool
     return dialogMaps().zones.contains(zoneId);
 }
 
+auto hasItem(const uint16 itemId) -> bool
+{
+    // res/ps2/items.bin: "PS2ITM01", then 0x10000 bits (bit = item id)
+    static const std::vector<uint8> bits = []
+    {
+        constexpr auto    path = "res/ps2/items.bin";
+        std::ifstream     f(path, std::ios::binary);
+        char              magic[8] = {};
+        std::vector<uint8> data(0x2000);
+        if (!f.read(magic, sizeof(magic)) || std::memcmp(magic, "PS2ITM01", 8) != 0 ||
+            !f.read(reinterpret_cast<char*>(data.data()), static_cast<std::streamsize>(data.size())))
+        {
+            ShowWarning("ps2: %s missing or invalid; items are not filtered for PS2 clients", path);
+            return std::vector<uint8>{};
+        }
+        ShowInfo("ps2: %s loaded", path);
+        return data;
+    }();
+
+    if (itemId == 0 || itemId == 0xFFFF || bits.empty())
+    {
+        return true;
+    }
+    return (bits[itemId >> 3] & (1u << (itemId & 7))) != 0;
+}
+
 auto mesNum(const uint16 zoneId, const uint16 mesNum) -> std::optional<uint16>
 {
     const auto line = dialog(zoneId, mesNum & 0x7FFF);
