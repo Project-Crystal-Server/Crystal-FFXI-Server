@@ -43,6 +43,18 @@
 
 extern std::map<xi::ZoneId, CZone*> g_PZoneList; // Global array of pointers for zones
 
+namespace
+{
+
+// Did a lobby write a session for this character, for the address the 0x00A came from?
+auto hasLobbySession(const uint32 charId, const IPP& ipp) -> bool
+{
+    const auto rset = db::preparedStmt("SELECT charid FROM accounts_sessions WHERE charid = ? AND client_addr = ? LIMIT 1", charId, ipp.getIP());
+    return rset && rset->rowsCount() != 0;
+}
+
+} // namespace
+
 MapNetworking::MapNetworking(Scheduler& scheduler, MapStatistics& mapStatistics, MapConfig config)
 : scheduler_(scheduler)
 , mapStatistics_(mapStatistics)
@@ -258,6 +270,19 @@ int32 MapNetworking::recv_parse(uint8* buff, size_t* buffsize, MapSession* PSess
                 if (PSession == nullptr)
                 {
                     // TODO: err msg?
+                    return -1;
+                }
+            }
+            else if (hasLobbySession(packetCharID, ipp))
+            {
+                // A login from a lobby that does not announce it over IPC (the Project Crystal
+                // lobby, for PlayOnline clients): it wrote the session row, for this client address,
+                // after authenticating the member. The session key in that row still has to decrypt
+                // everything that follows.
+                ShowInfoFmt("recv_parse: charid {} from {} has a lobby session but no pending one; accepting it", packetCharID, ipp.toString());
+                PSession = mapSessions_.createSession(ipp);
+                if (PSession == nullptr)
+                {
                     return -1;
                 }
             }
