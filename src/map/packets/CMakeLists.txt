@@ -1,8 +1,11 @@
 add_subdirectory(c2s)
 add_subdirectory(s2c)
 
-# Retail PS2 client translation (packets/ps2/ps2_client.h)
-file(GLOB PACKET_PS2_SOURCES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/ps2/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/ps2/*.h)
+# Older client builds: client identity and translation profiles (packets/compat/profile.h), and the
+# console clients' profiles (packets/console/console_profile.h)
+file(GLOB PACKET_PS2_SOURCES CONFIGURE_DEPENDS
+    ${CMAKE_CURRENT_SOURCE_DIR}/compat/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/compat/*.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/console/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/console/*.h)
 
 set(PACKET_C2S_SOURCES
     ${PACKET_C2S_SOURCES}

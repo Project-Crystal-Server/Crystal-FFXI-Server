@@ -19,8 +19,8 @@
 ===========================================================================
 */
 
-#include "ps2_entities.h"
-#include "ps2_ids.h"
+#include "console_entities.h"
+#include "console_ids.h"
 
 #include "entities/char_entity.h"
 #include "map_session.h"
@@ -39,7 +39,7 @@
 //
 // Sources: FFXI-PS2 docs/packets/*.md, "Ids to remap".
 
-namespace ps2
+namespace console
 {
 
 namespace
@@ -125,7 +125,7 @@ auto tables() -> const Tables&
     return t;
 }
 
-auto apply(const Fields& fields, MapSession* PSession, CBasicPacket& packet, const bool toPS2) -> Result
+auto apply(const Fields& fields, MapSession* PSession, CBasicPacket& packet, const bool toClient) -> Result
 {
     if (fields.empty())
     {
@@ -149,7 +149,7 @@ auto apply(const Fields& fields, MapSession* PSession, CBasicPacket& packet, con
                 continue;
             }
             const auto was = packet.ref<uint32>(f.offset);
-            const auto now = toPS2 ? ids::uniqueNoToPS2(was) : ids::uniqueNoFromPS2(was);
+            const auto now = toClient ? ids::uniqueNoToClient(was) : ids::uniqueNoFromClient(was);
             if (!now)
             {
                 return Result::Drop;
@@ -168,7 +168,7 @@ auto apply(const Fields& fields, MapSession* PSession, CBasicPacket& packet, con
             {
                 continue; // "no entity"
             }
-            const auto now = toPS2 ? ids::actIndexToPS2(zone, was) : ids::actIndexFromPS2(zone, was);
+            const auto now = toClient ? ids::actIndexToClient(zone, was) : ids::actIndexFromClient(zone, was);
             if (!now)
             {
                 return Result::Drop;
@@ -193,4 +193,4 @@ auto remapEntitiesC2S(MapSession* PSession, CBasicPacket& packet) -> Result
     return apply(tables().c2s[packet.getType()], PSession, packet, false);
 }
 
-} // namespace ps2
+} // namespace console

@@ -19,9 +19,9 @@
 ===========================================================================
 */
 
-#include "ps2_items.h"
-#include "ps2_groups.h"
-#include "ps2_ids.h"
+#include "console_items.h"
+#include "console_groups.h"
+#include "console_ids.h"
 
 #include <algorithm>
 #include <cstring>
@@ -37,7 +37,7 @@
 // Item ids inside messages (0x009/0x029/0x02A/0x053 parameters) are not filtered: the message still
 // shows, with the item's name from the 2010 DAT.
 
-namespace ps2
+namespace console
 {
 
 namespace
@@ -200,4 +200,4 @@ auto filterItemsS2C(MapSession* /* PSession */, CBasicPacket& packet) -> Result
     }
 }
 
-} // namespace ps2
+} // namespace console

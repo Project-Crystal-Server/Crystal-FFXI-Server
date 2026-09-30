@@ -1,0 +1,40 @@
+/*
+===========================================================================
+
+  Copyright (c) 2026 LandSandBoat Dev Teams
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see http://www.gnu.org/licenses/
+
+===========================================================================
+*/
+
+#pragma once
+
+#include "packets/compat/profile.h"
+
+#include <memory>
+
+namespace console
+{
+
+// The retail PS2 client, SCUS-97266 at patch 20100904_2: its layouts (the translators in ps2_s2c_*.cpp,
+// ps2_c2s.cpp), the ids it has a handler for, and its id maps in res/compat/ps2-20100904/.
+auto makeProfile20100904() -> std::unique_ptr<compat::Profile>;
+
+// The final console clients, PS2 patch 20160203_0 and Xbox 360 40160203_0: one netcode (console_2016.cpp and
+// the 2010 translators that still apply), each with its own id maps (res/compat/ps2-20160203/,
+// res/compat/x360-40160203/). Pass Platform::PS2 or Platform::Xbox360.
+auto makeProfile20160203(compat::Platform platform) -> std::unique_ptr<compat::Profile>;
+
+} // namespace console

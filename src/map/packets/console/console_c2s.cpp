@@ -19,7 +19,7 @@
 ===========================================================================
 */
 
-#include "ps2_groups.h"
+#include "console_groups.h"
 
 #include "map_session.h"
 
@@ -39,7 +39,7 @@
 // Fields that carry 2010-numbered ids (event ids, NPC indices, items, ...) are not remapped here;
 // see "Ids to remap" in c2s.md.
 
-namespace ps2
+namespace console
 {
 
 namespace
@@ -361,36 +361,36 @@ auto tradeRes(MapSession*, CBasicPacket& packet) -> Result
 
 } // namespace
 
-void registerC2S()
+void registerC2S(compat::Profile& p)
 {
-    registerC2S(0x033, &tradeRes);
-    registerC2S(0x01A, &action);
-    registerC2S(0x01B, &friendPass);
-    registerC2S(0x01E, &gm);
-    registerC2S(0x01F, &gmCommand);
-    registerC2S(0x04E, &auction);
-    registerC2S(0x050, &equipSet);
-    registerC2S(0x061, &cliStatus);
-    registerC2S(0x077, &groupChange2);
-    registerC2S(0x083, &shopBuy);
-    registerC2S(0x0A0, &switchProposal);
-    registerC2S(0x0A1, &switchVote);
-    registerC2S(0x0AA, &guildBuy);
-    registerC2S(0x0B5, &chatStd);
-    registerC2S(0x0B6, &chatName);
-    registerC2S(0x0C3, &comlinkMake);
-    registerC2S(0x0C4, &comlinkActive);
-    registerC2S(0x0DD, &equipInspect);
-    registerC2S(0x0E1, &lsMessage);
-    registerC2S(0x0E2, &lsMessage);
-    registerC2S(0x0E4, &lsMessage);
-    registerC2S(0x0FA, &myroomLayout);
-    registerC2S(0x0FB, &myroomItem);
-    registerC2S(0x0FC, &myroomPlantAdd);
-    registerC2S(0x0FD, &myroomItem);
-    registerC2S(0x0FE, &myroomPlantCrop);
-    registerC2S(0x0FF, &myroomItem);
-    registerC2S(0x102, &extendedJob);
+    p.c2s(0x033, &tradeRes);
+    p.c2s(0x01A, &action);
+    p.c2s(0x01B, &friendPass);
+    p.c2s(0x01E, &gm);
+    p.c2s(0x01F, &gmCommand);
+    p.c2s(0x04E, &auction);
+    p.c2s(0x050, &equipSet);
+    p.c2s(0x061, &cliStatus);
+    p.c2s(0x077, &groupChange2);
+    p.c2s(0x083, &shopBuy);
+    p.c2s(0x0A0, &switchProposal);
+    p.c2s(0x0A1, &switchVote);
+    p.c2s(0x0AA, &guildBuy);
+    p.c2s(0x0B5, &chatStd);
+    p.c2s(0x0B6, &chatName);
+    p.c2s(0x0C3, &comlinkMake);
+    p.c2s(0x0C4, &comlinkActive);
+    p.c2s(0x0DD, &equipInspect);
+    p.c2s(0x0E1, &lsMessage);
+    p.c2s(0x0E2, &lsMessage);
+    p.c2s(0x0E4, &lsMessage);
+    p.c2s(0x0FA, &myroomLayout);
+    p.c2s(0x0FB, &myroomItem);
+    p.c2s(0x0FC, &myroomPlantAdd);
+    p.c2s(0x0FD, &myroomItem);
+    p.c2s(0x0FE, &myroomPlantCrop);
+    p.c2s(0x0FF, &myroomItem);
+    p.c2s(0x102, &extendedJob);
 }
 
-} // namespace ps2
+} // namespace console

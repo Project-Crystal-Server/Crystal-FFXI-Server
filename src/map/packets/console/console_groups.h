@@ -21,30 +21,31 @@
 
 #pragma once
 
-#include "ps2_client.h"
+#include "console_client.h"
 
 #include "packets/basic.h"
 
 #include <cstring>
 
-// Translator groups. Each ps2_<dir>_<group>.cpp defines one register function; registerGroups calls them all.
+// Translator groups. Each console_<dir>_<group>.cpp defines one register function; registerGroups calls them all
+// for a profile (console_profile.cpp).
 
-namespace ps2
+namespace console
 {
 
-void registerS2C_00(); // ps2_s2c_00.cpp: 0x000-0x01B
-void registerS2C_1C(); // ps2_s2c_1c.cpp: 0x01C-0x03F
-void registerS2C_40(); // ps2_s2c_40.cpp: 0x040-0x07F
-void registerS2C_80(); // ps2_s2c_80.cpp: 0x080-0x10F
-void registerC2S();    // ps2_c2s.cpp
+void registerS2C_00(compat::Profile& p); // console_s2c_00.cpp: 0x000-0x01B
+void registerS2C_1C(compat::Profile& p); // console_s2c_1c.cpp: 0x01C-0x03F
+void registerS2C_40(compat::Profile& p); // console_s2c_40.cpp: 0x040-0x07F
+void registerS2C_80(compat::Profile& p); // console_s2c_80.cpp: 0x080-0x10F
+void registerC2S(compat::Profile& p);    // console_c2s.cpp
 
-inline void registerGroups()
+inline void registerGroups(compat::Profile& p)
 {
-    registerS2C_00();
-    registerS2C_1C();
-    registerS2C_40();
-    registerS2C_80();
-    registerC2S();
+    registerS2C_00(p);
+    registerS2C_1C(p);
+    registerS2C_40(p);
+    registerS2C_80(p);
+    registerC2S(p);
 }
 
 // Helpers for translators: work on a copy of the payload so fields can move in either direction.
@@ -87,4 +88,4 @@ struct Rewrite
     }
 };
 
-} // namespace ps2
+} // namespace console

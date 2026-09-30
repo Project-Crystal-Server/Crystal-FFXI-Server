@@ -28,7 +28,7 @@
 #include "entities/char_entity.h"
 
 #include "packets/basic.h"
-#include "packets/ps2/ps2_client.h"
+#include "packets/compat/profile.h"
 #include "packets/s2c/0x00b_logout.h"
 
 #include "utils/charutils.h"
@@ -302,8 +302,14 @@ int32 MapNetworking::recv_parse(uint8* buff, size_t* buffsize, MapSession* PSess
             return -1;
         }
 
-        // The retail PS2 client names itself here; its packets are translated from now on (packets/ps2)
-        PSession->isPS2Client = ps2::isPS2Platform(loginPacket.sPlatform);
+        // Every client names its platform and build here; a build with a translation profile has its
+        // packets translated from now on (packets/compat)
+        PSession->client = compat::identify(loginPacket.sPlatform, loginPacket.Ver);
+        ShowInfoFmt("recv_parse: charid {} from {}: client {}", packetCharID, ipp.toString(), PSession->client.describe());
+        if (PSession->client.console() && !PSession->client.translated())
+        {
+            ShowWarningFmt("recv_parse: charid {}: no translation profile for this console build; it gets today's packets as they are", packetCharID);
+        }
 
         // We can only get here if an 0x00A (not encrypted) packet was here.
         // If we were pending zones, delete our old char
@@ -489,7 +495,7 @@ int32 MapNetworking::parse(uint8* buff, size_t* buffsize, MapSession* PSession)
             // We're copying in and bounding only exactly what we want, so it's safe.
             std::memcpy(&parseScratchPacket_.ref<uint8>(0), SmallPD_ptr, PACKET_SIZE);
 
-            if (PSession->isPS2Client && ps2::translateC2S(PSession, parseScratchPacket_) == ps2::Result::Drop)
+            if (PSession->client.translated() && compat::translateC2S(PSession, parseScratchPacket_) == compat::Result::Drop)
             {
                 continue;
             }
@@ -528,9 +534,9 @@ int32 MapNetworking::parse(uint8* buff, size_t* buffsize, MapSession* PSession)
 
     if (ref<uint16>(buff, 2) != PSession->server_packet_id)
     {
-        if (PSession->isPS2Client && ps2::tracing())
+        if (PSession->client.translated() && compat::tracing())
         {
-            ShowInfoFmt("ps2 trace: client acked {}, server is at {}: resending the last datagram", ref<uint16>(buff, 2), PSession->server_packet_id);
+            ShowInfoFmt("compat trace: client acked {}, server is at {}: resending the last datagram", ref<uint16>(buff, 2), PSession->server_packet_id);
         }
 
         // If the client and server have become out of sync, then caching takes place. However, caching
@@ -636,9 +642,9 @@ int32 MapNetworking::send_parse(uint8* buff, size_t* buffsize, MapSession* PSess
                 // packetList is a fresh copy on every attempt, so translating in place is safe
                 // A dropped packet still counts as consumed, or it (and what follows) would be sent again;
                 // only what goes in the datagram counts against PacketCount (a PS2 zone-in drops dozens).
-                if (PSession->isPS2Client && ps2::translateS2C(PSession, *PSmallPacket) == ps2::Result::Drop)
+                if (PSession->client.translated() && compat::translateS2C(PSession, *PSmallPacket) == compat::Result::Drop)
                 {
-                    std::ignore = ps2::takeEmittedS2C();
+                    std::ignore = compat::takeEmittedS2C();
                     continue;
                 }
 
@@ -648,10 +654,10 @@ int32 MapNetworking::send_parse(uint8* buff, size_t* buffsize, MapSession* PSess
 
                 packets++;
 
-                // A PS2 translator may have split the packet in two (packets/ps2/ps2_client.h emitS2C)
-                if (PSession->isPS2Client)
+                // A translator may have split the packet in two (packets/compat/profile.h emitS2C)
+                if (PSession->client.translated())
                 {
-                    for (auto& extra : ps2::takeEmittedS2C())
+                    for (auto& extra : compat::takeEmittedS2C())
                     {
                         if (extra.size() < 4 || *buffsize + extra.size() >= kMaxBufferSize)
                         {

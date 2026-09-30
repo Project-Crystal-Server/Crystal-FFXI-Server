@@ -25,11 +25,11 @@
 // (passes as is) or has no handler (dropped by translateS2C). See FFXI-PS2 docs/packets/s2c_40.md for
 // the per-id layouts. Offsets below include the 4-byte header, as in the decompiled handlers.
 
-#include "ps2_groups.h"
+#include "console_groups.h"
 
 #include "map_session.h"
 
-namespace ps2
+namespace console
 {
 
 namespace
@@ -310,25 +310,25 @@ auto s2c074ChocoboList(MapSession*, CBasicPacket& packet) -> Result
 
 } // namespace
 
-void registerS2C_40()
+void registerS2C_40(compat::Profile& p)
 {
-    registerS2C(0x043, s2c043TalkNumName);
-    registerS2C(0x044, s2c044ExtendedJob);
-    registerS2C(0x04B, s2c04BPbxResult);
-    registerS2C(0x050, s2c050EquipList);
-    registerS2C(0x051, s2c051GrapList);
-    registerS2C(0x055, s2c055ScenarioItem);
-    registerS2C(0x056, s2c056Mission);
-    registerS2C(0x05A, s2c05AMotionMes);
-    registerS2C(0x05B, s2cWpos);
-    registerS2C(0x061, s2c061CliStatus);
-    registerS2C(0x063, s2c063MiscData);
-    registerS2C(0x065, s2cWpos);
-    registerS2C(0x067, s2c067);
-    registerS2C(0x068, s2c068PetSync);
-    registerS2C(0x069, s2c069ChocoboRacing);
-    registerS2C(0x071, s2c071Influence);
-    registerS2C(0x074, s2c074ChocoboList);
+    p.s2c(0x043, s2c043TalkNumName);
+    p.s2c(0x044, s2c044ExtendedJob);
+    p.s2c(0x04B, s2c04BPbxResult);
+    p.s2c(0x050, s2c050EquipList);
+    p.s2c(0x051, s2c051GrapList);
+    p.s2c(0x055, s2c055ScenarioItem);
+    p.s2c(0x056, s2c056Mission);
+    p.s2c(0x05A, s2c05AMotionMes);
+    p.s2c(0x05B, s2cWpos);
+    p.s2c(0x061, s2c061CliStatus);
+    p.s2c(0x063, s2c063MiscData);
+    p.s2c(0x065, s2cWpos);
+    p.s2c(0x067, s2c067);
+    p.s2c(0x068, s2c068PetSync);
+    p.s2c(0x069, s2c069ChocoboRacing);
+    p.s2c(0x071, s2c071Influence);
+    p.s2c(0x074, s2c074ChocoboList);
 }
 
-} // namespace ps2
+} // namespace console

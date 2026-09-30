@@ -19,7 +19,7 @@
 ===========================================================================
 */
 
-#include "ps2_groups.h"
+#include "console_groups.h"
 
 #include "map_session.h"
 
@@ -31,10 +31,10 @@
 // Needs no translator (the 2010 handler reads today's layout): 0x005 packetcontrol, 0x006 naraku, 0x008 enterzone
 // (the client copies the first 0x20 bytes), 0x009 message, 0x00B logout.
 
-namespace ps2
+namespace console
 {
 
-void registerS2C_00();
+void registerS2C_00(compat::Profile& p);
 
 namespace
 {
@@ -256,15 +256,15 @@ auto jobInfo(MapSession* /* PSession */, CBasicPacket& packet) -> Result
 
 } // namespace
 
-void registerS2C_00()
+void registerS2C_00(compat::Profile& p)
 {
-    registerS2C(0x00A, login);
-    registerS2C(0x00D, charPc);
-    registerS2C(0x00E, charNpc);
-    registerS2C(0x012, gmText);
-    registerS2C(0x013, gmText);
-    registerS2C(0x017, chatStd);
-    registerS2C(0x01B, jobInfo);
+    p.s2c(0x00A, login);
+    p.s2c(0x00D, charPc);
+    p.s2c(0x00E, charNpc);
+    p.s2c(0x012, gmText);
+    p.s2c(0x013, gmText);
+    p.s2c(0x017, chatStd);
+    p.s2c(0x01B, jobInfo);
 }
 
-} // namespace ps2
+} // namespace console

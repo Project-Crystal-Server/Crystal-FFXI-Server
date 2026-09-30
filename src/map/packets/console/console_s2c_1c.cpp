@@ -19,8 +19,8 @@
 ===========================================================================
 */
 
-#include "ps2_groups.h"
-#include "ps2_ids.h"
+#include "console_groups.h"
+#include "console_ids.h"
 
 #include "entities/char_entity.h"
 #include "event_info.h"
@@ -31,7 +31,7 @@
 // Server->client packets 0x01C-0x03F for the 2010 PS2 client (FFXI-PS2 docs/packets/s2c_1c.md).
 // Ids not registered here have the same layout in both clients and pass unchanged.
 
-namespace ps2
+namespace console
 {
 
 namespace
@@ -215,8 +215,8 @@ auto battle2(MapSession* /* PSession */, CBasicPacket& packet) -> Result
     BitWriter out{ static_cast<uint8*>(packet), 5 * 8, (PACKET_SIZE & ~3u) * 8 };
 
     // The caster and target ids are static entity ids for NPCs and mobs, renumbered since 2010 like
-    // every other entity field (ps2_entities.cpp); one that did not exist in 2010 drops the action.
-    const auto uid = [](const uint32 v) { return ids::uniqueNoToPS2(v); };
+    // every other entity field (console_entities.cpp); one that did not exist in 2010 drops the action.
+    const auto uid = [](const uint32 v) { return ids::uniqueNoToClient(v); };
 
     const auto caster = uid(in.get(32));
     if (!caster)
@@ -419,7 +419,7 @@ auto eventGuard(MapSession* PSession, CBasicPacket& packet) -> Result
     }
 
     auto* PChar = PSession->PChar.get();
-    ShowInfoFmt("ps2: event {} in zone {} is not in the 2010 data; skipped for {}", event, zone, PChar ? PChar->getName() : "?");
+    ShowInfoFmt("console: event {} in zone {} is not in the 2010 data; skipped for {}", event, zone, PChar ? PChar->getName() : "?");
     if (PChar && PChar->currentEvent && PChar->currentEvent->eventId == event)
     {
         PChar->endCurrentEvent();
@@ -447,32 +447,32 @@ auto zoneDialog(MapSession* PSession, CBasicPacket& packet) -> Result
 
 } // namespace
 
-void registerS2C_1C()
+void registerS2C_1C(compat::Profile& p)
 {
-    registerS2C(0x027, zoneDialog<0x0A>);
-    registerS2C(0x032, eventGuard<0x0A>);
-    registerS2C(0x033, eventGuard<0x0A>);
-    registerS2C(0x034, eventGuard<0x2A>);
-    registerS2C(0x02A, zoneDialog<0x1A>);
-    registerS2C(0x036, zoneDialog<0x0A>);
+    p.s2c(0x027, zoneDialog<0x0A>);
+    p.s2c(0x032, eventGuard<0x0A>);
+    p.s2c(0x033, eventGuard<0x0A>);
+    p.s2c(0x034, eventGuard<0x2A>);
+    p.s2c(0x02A, zoneDialog<0x1A>);
+    p.s2c(0x036, zoneDialog<0x0A>);
 
-    registerS2C(0x01C, itemMax);
-    registerS2C(0x01E, itemNum);
-    registerS2C(0x01F, itemList);
-    registerS2C(0x020, itemAttr);
-    registerS2C(0x021, itemTradeReq);
-    registerS2C(0x022, itemTradeRes);
-    registerS2C(0x023, itemTradeList);
-    registerS2C(0x025, itemTradeMyList);
-    registerS2C(0x026, itemSubcontainer);
-    registerS2C(0x028, battle2);
-    registerS2C(0x029, battleMessage);
-    registerS2C(0x02D, battleMessage2);
-    registerS2C(0x037, serverStatus);
-    registerS2C(0x03C, shopList);
-    registerS2C(0x03D, shopSell);
-    registerS2C(0x03E, shopOpen);
-    registerS2C(0x03F, shopBuy);
+    p.s2c(0x01C, itemMax);
+    p.s2c(0x01E, itemNum);
+    p.s2c(0x01F, itemList);
+    p.s2c(0x020, itemAttr);
+    p.s2c(0x021, itemTradeReq);
+    p.s2c(0x022, itemTradeRes);
+    p.s2c(0x023, itemTradeList);
+    p.s2c(0x025, itemTradeMyList);
+    p.s2c(0x026, itemSubcontainer);
+    p.s2c(0x028, battle2);
+    p.s2c(0x029, battleMessage);
+    p.s2c(0x02D, battleMessage2);
+    p.s2c(0x037, serverStatus);
+    p.s2c(0x03C, shopList);
+    p.s2c(0x03D, shopSell);
+    p.s2c(0x03E, shopOpen);
+    p.s2c(0x03F, shopBuy);
 }
 
-} // namespace ps2
+} // namespace console

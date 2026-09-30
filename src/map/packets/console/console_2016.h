@@ -21,13 +21,12 @@
 
 #pragma once
 
-#include "ps2_client.h"
+#include "packets/compat/profile.h"
 
-namespace ps2
+// Translators for the final console clients (PS2 20160203_0, Xbox 360 40160203_0): console_2016.cpp.
+namespace console::v2016
 {
 
-// Keeps items the 2010 install does not have (ids::hasItem) away from the PS2 client, which would
-// show them as "." placeholders. Runs on the 2010 layout, after the s2c translators (ps2_items.cpp).
-auto filterItemsS2C(MapSession* PSession, CBasicPacket& packet) -> Result;
+void registerTranslators(compat::Profile& p);
 
-} // namespace ps2
+} // namespace console::v2016

@@ -25,13 +25,11 @@
 
 #include <optional>
 
-// Id remapping for the retail PS2 client (2010 data). The server's ids come from today's DATs; the
-// PS2 client indexes its own 2010 DATs, where most tables have shifted. Only PS2 translators call
-// these, so PC clients are never affected.
-//
-// The maps are line numbers only (no game text), generated on a machine that has both a current PC
-// install and the PS2 install (FFXI-PS2 repo, tools/dialog_map.py) and read from res/ps2/.
-namespace ps2::ids
+// Id remapping for the PS2 client's data. The server's ids come from today's DATs; the PS2 client
+// indexes its own, where most tables have shifted. Only translators call these, and they answer from
+// the id maps of the profile being translated for (compat::active().maps(), compat/id_maps.h), so each
+// PS2 build gets its own numbering and PC clients are never affected.
+namespace console::ids
 {
 
 // Zone dialog line: today's index -> the 2010 index, or nullopt if the line did not exist in 2010
@@ -47,29 +45,29 @@ auto mesNum(uint16 zoneId, uint16 mesNum) -> std::optional<uint16>;
 
 // Does the 2010 install have this item? Its item DATs hold a record for every id of the ranges they
 // cover, and items added since are "." placeholders there, so an id counts only with a real name
-// (tools/item_map.py -> res/ps2/items.bin). Item 0 (no item) and gil are always known. Without the
+// (tools/item_map.py -> items.bin). Item 0 (no item) and gil are always known. Without the
 // map every item is known (nothing is filtered).
 auto hasItem(uint16 itemId) -> bool;
 
 // Does any of the zone's 2010 event files carry this event number? An event it does not have runs on
 // no entity of the client, which then never sends its end (the player stays locked). Event numbers
-// themselves did not shift between versions. (tools/event_map.py -> res/ps2/events.bin.) Without the
+// themselves did not shift between versions. (tools/event_map.py -> events.bin.) Without the
 // map every event is known.
 auto hasEvent(uint16 zoneId, uint16 eventId) -> bool;
 
 // Static entities (NPCs, mobs, doors: UniqueNo 0x01000000 | zone << 12 | index, ActIndex = index).
 // The zone's name list in the 2010 DATs has entities inserted since, so indices shift. The map is
-// aligned on the names (tools/entity_map.py -> res/ps2/entity_map.bin). Anything that is not a static
+// aligned on the names (tools/entity_map.py -> entity_map.bin). Anything that is not a static
 // entity (players, pets, trusts: ActIndex >= 0x400) passes unchanged. An entity added after 2010 has
 // no 2010 index: nullopt, and the packet naming it should be dropped.
 auto isStatic(uint32 uniqueNo) -> bool;
 
 // today -> 2010 (packets to the PS2 client)
-auto uniqueNoToPS2(uint32 uniqueNo) -> std::optional<uint32>;
-auto actIndexToPS2(uint16 zoneId, uint16 actIndex) -> std::optional<uint16>;
+auto uniqueNoToClient(uint32 uniqueNo) -> std::optional<uint32>;
+auto actIndexToClient(uint16 zoneId, uint16 actIndex) -> std::optional<uint16>;
 
 // 2010 -> today (packets from the PS2 client)
-auto uniqueNoFromPS2(uint32 uniqueNo) -> std::optional<uint32>;
-auto actIndexFromPS2(uint16 zoneId, uint16 actIndex) -> std::optional<uint16>;
+auto uniqueNoFromClient(uint32 uniqueNo) -> std::optional<uint32>;
+auto actIndexFromClient(uint16 zoneId, uint16 actIndex) -> std::optional<uint16>;
 
-} // namespace ps2::ids
+} // namespace console::ids

@@ -26,16 +26,16 @@
 // docs/packets/s2c_80.md for the per-id layouts. Offsets below include the 4-byte header, as in the
 // decompiled handlers. Where an id has two handlers, "B" runs first, then "A".
 //
-// Id remapping (items, spells, abilities, merits, zones, titles...) is not done here: see ps2_ids.h and
+// Id remapping (items, spells, abilities, merits, zones, titles...) is not done here: see console_ids.h and
 // the "Ids to remap" section of the doc.
 
-#include "ps2_groups.h"
+#include "console_groups.h"
 
 #include "map_session.h"
 
 #include <optional>
 
-namespace ps2
+namespace console
 {
 
 namespace
@@ -378,28 +378,28 @@ auto bazaarSell(MapSession*, CBasicPacket& packet) -> Result
 
 } // namespace
 
-void registerS2C_80()
+void registerS2C_80(compat::Profile& p)
 {
-    registerS2C(0x083, guildList);
-    registerS2C(0x085, guildList);
-    registerS2C(0x08C, merit);
-    registerS2C(0x0AA, magicData);
-    registerS2C(0x0AC, commandData);
-    registerS2C(0x0B4, config);
-    registerS2C(0x0C8, groupTbl);
-    registerS2C(0x0C9, equipInspect);
-    registerS2C(0x0CA, inspectMessage);
-    registerS2C(0x0CC, linkshellMessage);
-    registerS2C(0x0D2, trophyList);
-    registerS2C(0x0D3, trophySolution);
-    registerS2C(0x0DC, groupSolicitReq);
-    registerS2C(0x0DD, groupList);
-    registerS2C(0x0DF, groupAttr);
-    registerS2C(0x0E0, groupComlink);
-    registerS2C(0x0E2, groupList);
-    registerS2C(0x0FA, myroomOperation);
-    registerS2C(0x105, bazaarList);
-    registerS2C(0x109, bazaarSell);
+    p.s2c(0x083, guildList);
+    p.s2c(0x085, guildList);
+    p.s2c(0x08C, merit);
+    p.s2c(0x0AA, magicData);
+    p.s2c(0x0AC, commandData);
+    p.s2c(0x0B4, config);
+    p.s2c(0x0C8, groupTbl);
+    p.s2c(0x0C9, equipInspect);
+    p.s2c(0x0CA, inspectMessage);
+    p.s2c(0x0CC, linkshellMessage);
+    p.s2c(0x0D2, trophyList);
+    p.s2c(0x0D3, trophySolution);
+    p.s2c(0x0DC, groupSolicitReq);
+    p.s2c(0x0DD, groupList);
+    p.s2c(0x0DF, groupAttr);
+    p.s2c(0x0E0, groupComlink);
+    p.s2c(0x0E2, groupList);
+    p.s2c(0x0FA, myroomOperation);
+    p.s2c(0x105, bazaarList);
+    p.s2c(0x109, bazaarSell);
 }
 
-} // namespace ps2
+} // namespace console

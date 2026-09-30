@@ -21,14 +21,13 @@
 
 #pragma once
 
-#include "ps2_client.h"
+#include "console_client.h"
 
-namespace ps2
+namespace console
 {
 
-// Remaps every static-entity field of one packet (table in ps2_entities.cpp): today -> 2010 for
-// outgoing packets, after the layout translator; 2010 -> today for incoming ones, after it.
-auto remapEntitiesS2C(MapSession* PSession, CBasicPacket& packet) -> Result;
-auto remapEntitiesC2S(MapSession* PSession, CBasicPacket& packet) -> Result;
+// Keeps items the 2010 install does not have (ids::hasItem) away from the PS2 client, which would
+// show them as "." placeholders. Runs on the 2010 layout, after the s2c translators (console_items.cpp).
+auto filterItemsS2C(MapSession* PSession, CBasicPacket& packet) -> Result;
 
-} // namespace ps2
+} // namespace console
