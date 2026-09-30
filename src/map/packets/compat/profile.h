@@ -38,9 +38,9 @@
 // per-id translators, and its id maps (compat/id_maps.h) from res/compat/<name>/.
 //
 // Profiles are built once, by the factories listed in profile.cpp. A build is matched on platform and
-// on the Ver of its 0x00A (res/compat/<profile>/versions.txt, or addVersion in its factory); a profile
-// that lists no versions serves every build of its platform no other profile claims (the first one
-// registered wins). For a session with a profile, send_parse calls translateS2C on every outgoing packet
+// on the version string the lobby stored for the session, then on the Ver of its 0x00A (both listed in
+// res/compat/<profile>/versions.txt, or addBuild / addVersion in its factory); failing both, the first
+// profile registered for the platform serves it. For a session with a profile, send_parse calls translateS2C on every outgoing packet
 // and parse calls translateC2S on every incoming one before it is dispatched.
 
 class CBasicPacket;
@@ -87,6 +87,13 @@ public:
     }
     void addVersion(uint32 version);
 
+    // Lobby version strings (the client's patch.ver, e.g. "20160203_0") this profile serves; checked before Ver
+    auto builds() const -> const std::vector<std::string>&
+    {
+        return builds_;
+    }
+    void addBuild(std::string build);
+
     // Registration (profile factories only)
     void s2c(uint16 id, Translator fn);
     void c2s(uint16 id, Translator fn);
@@ -113,6 +120,7 @@ private:
     Platform                         platform_;
     std::string                      description_;
     std::vector<uint32>              versions_;
+    std::vector<std::string>         builds_;
     std::array<Translator, kIdCount> s2c_{};
     std::array<Translator, kIdCount> c2s_{};
     std::array<bool, kIdCount>       handled_{};
@@ -124,8 +132,8 @@ private:
 // Every registered profile
 auto profiles() -> const std::vector<std::unique_ptr<Profile>>&;
 
-// The profile for a platform and 0x00A Ver, or nullptr (today's layout)
-auto findProfile(Platform platform, uint32 version) -> const Profile*;
+// The profile for a platform, lobby version string and 0x00A Ver, or nullptr (today's layout)
+auto findProfile(Platform platform, uint32 version, const std::string& build = {}) -> const Profile*;
 
 // The profile whose translator is running on this thread (set by translateS2C / translateC2S), for
 // helpers deep in a translator that need its id maps. Only valid inside a translation.

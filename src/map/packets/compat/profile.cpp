@@ -63,18 +63,29 @@ auto buildProfiles() -> std::vector<std::unique_ptr<Profile>>
             {
                 continue;
             }
+            auto       entry = line.substr(b);
+            const auto e     = entry.find_last_not_of(" \t\r");
+            entry            = entry.substr(0, e + 1);
+
+            // a whole number (0x... or decimal) is a Ver; anything else ("20160203_0") a lobby version string
+            size_t used = 0;
             try
             {
-                p->addVersion(static_cast<uint32>(std::stoul(line.substr(b), nullptr, 0)));
+                const auto value = std::stoul(entry, &used, 0);
+                if (used == entry.size())
+                {
+                    p->addVersion(static_cast<uint32>(value));
+                    continue;
+                }
             }
             catch (const std::exception&)
             {
-                ShowWarningFmt("compat: res/compat/{}/versions.txt: cannot read '{}'", p->name(), line);
             }
+            p->addBuild(entry);
         }
-        if (!p->versions().empty())
+        if (!p->versions().empty() || !p->builds().empty())
         {
-            ShowInfoFmt("compat: profile {} serves {} Ver value(s)", p->name(), p->versions().size());
+            ShowInfoFmt("compat: profile {} serves {} version string(s), {} Ver value(s)", p->name(), p->builds().size(), p->versions().size());
         }
     }
     return out;
@@ -130,6 +141,11 @@ Profile::Profile(std::string name, const Platform platform, std::string descript
 void Profile::addVersion(const uint32 version)
 {
     versions_.push_back(version);
+}
+
+void Profile::addBuild(std::string build)
+{
+    builds_.push_back(std::move(build));
 }
 
 void Profile::s2c(const uint16 id, const Translator fn)
@@ -237,26 +253,32 @@ auto profiles() -> const std::vector<std::unique_ptr<Profile>>&
     return all;
 }
 
-auto findProfile(const Platform platform, const uint32 version) -> const Profile*
+auto findProfile(const Platform platform, const uint32 version, const std::string& build) -> const Profile*
 {
-    const Profile* fallback = nullptr;
+    const Profile* byVersion = nullptr;
+    const Profile* fallback  = nullptr;
     for (const auto& p : profiles())
     {
         if (p->platform() != platform)
         {
             continue;
         }
-        const auto& vs = p->versions();
-        if (std::find(vs.begin(), vs.end(), version) != vs.end())
+        const auto& bs = p->builds();
+        if (!build.empty() && std::find(bs.begin(), bs.end(), build) != bs.end())
         {
             return p.get();
         }
-        if (vs.empty() && fallback == nullptr)
+        const auto& vs = p->versions();
+        if (byVersion == nullptr && std::find(vs.begin(), vs.end(), version) != vs.end())
+        {
+            byVersion = p.get();
+        }
+        if (fallback == nullptr)
         {
             fallback = p.get();
         }
     }
-    return fallback;
+    return byVersion ? byVersion : fallback;
 }
 
 auto active() -> const Profile&

@@ -50,6 +50,8 @@ struct ClientInfo
     Platform       platform = Platform::PC; // until the 0x00A names it
     uint32         version  = 0;       // Ver of the 0x00A
     char           tag[5]   = {};      // sPlatform as sent (4 bytes, not terminated when full)
+    std::string    build;              // version string of the lobby login (the client's patch.ver), if the lobby stored it
+    uint32         expansions = 0;     // expansions the client says it has installed (lobby login)
     const Profile* profile  = nullptr; // translation profile; nullptr: today's layout, nothing translated
 
     // Anything but the PC client ("WIN")
@@ -63,11 +65,13 @@ struct ClientInfo
         return profile != nullptr;
     }
 
-    // "PS2 Ver 01328DE0 (ps2-20100904)", for logs and GM tools
+    // "PS2 20100904_2 Ver 00000000 (ps2-20100904)", for logs and GM tools
     auto describe() const -> std::string;
 };
 
-// sPlatform (4 bytes) and Ver of an 0x00A -> the client and the profile that serves it
-auto identify(const uint8* sPlatform, uint32 version) -> ClientInfo;
+// sPlatform (4 bytes) and Ver of an 0x00A, plus what the lobby stored for the session (accounts_sessions
+// client_version / client_expansions; empty and 0 without it) -> the client and the profile that serves it.
+// The consoles send Ver 0, so the build is told apart by the lobby's version string.
+auto identify(const uint8* sPlatform, uint32 version, const std::string& build = {}, uint32 expansions = 0) -> ClientInfo;
 
 } // namespace compat

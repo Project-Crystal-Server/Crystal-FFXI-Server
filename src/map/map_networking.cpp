@@ -304,7 +304,16 @@ int32 MapNetworking::recv_parse(uint8* buff, size_t* buffsize, MapSession* PSess
 
         // Every client names its platform and build here; a build with a translation profile has its
         // packets translated from now on (packets/compat)
-        PSession->client = compat::identify(loginPacket.sPlatform, loginPacket.Ver);
+        // Consoles send Ver 0: the build comes from the version string their lobby login stored for the session
+        std::string build;
+        uint32      expansions = 0;
+        if (const auto rsetBuild = db::preparedStmt("SELECT client_version, client_expansions FROM accounts_sessions WHERE charid = ? LIMIT 1", packetCharID);
+            rsetBuild && rsetBuild->rowsCount() != 0 && rsetBuild->next())
+        {
+            build      = rsetBuild->get<std::string>("client_version");
+            expansions = rsetBuild->get<uint32>("client_expansions");
+        }
+        PSession->client = compat::identify(loginPacket.sPlatform, loginPacket.Ver, build, expansions);
         ShowInfoFmt("recv_parse: charid {} from {}: client {}", packetCharID, ipp.toString(), PSession->client.describe());
         if (PSession->client.console() && !PSession->client.translated())
         {

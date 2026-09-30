@@ -76,10 +76,11 @@ auto platformName(const Platform platform) -> const char*
 auto ClientInfo::describe() const -> std::string
 {
     const auto base = platform == Platform::Unknown ? fmt::format("unknown ({:?})", tag) : std::string(platformName(platform));
-    return fmt::format("{} Ver {:08X} ({})", base, version, profile ? profile->name() : "today's layout");
+    return fmt::format("{} {}Ver {:08X} expansions {:X} ({})", base, build.empty() ? "" : build + " ", version, expansions,
+                       profile ? profile->name() : "today's layout");
 }
 
-auto identify(const uint8* sPlatform, const uint32 version) -> ClientInfo
+auto identify(const uint8* sPlatform, const uint32 version, const std::string& build, const uint32 expansions) -> ClientInfo
 {
     ClientInfo info;
     std::memcpy(info.tag, sPlatform, 4);
@@ -92,8 +93,10 @@ auto identify(const uint8* sPlatform, const uint32 version) -> ClientInfo
     }
 
     info.platform = platformOf(info.tag);
-    info.version  = version;
-    info.profile  = findProfile(info.platform, version);
+    info.version    = version;
+    info.build      = build;
+    info.expansions = expansions;
+    info.profile    = findProfile(info.platform, version, build);
     return info;
 }
 
