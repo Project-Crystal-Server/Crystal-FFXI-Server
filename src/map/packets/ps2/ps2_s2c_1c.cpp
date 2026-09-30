@@ -23,6 +23,7 @@
 #include "ps2_ids.h"
 
 #include "entities/char_entity.h"
+#include "event_info.h"
 #include "map_session.h"
 
 #include <algorithm>
@@ -402,6 +403,30 @@ auto shopBuy(MapSession* /* PSession */, CBasicPacket& packet) -> Result
 // 0x027 / 0x02A / 0x036: MesNum is a line of the current zone's dialog DAT, today's numbering. The
 // 2010 DAT has shifted (lines inserted over the years), so remap it; a line added after 2010 has no
 // counterpart and the message is dropped rather than shown as the wrong text.
+// 0x032 EVENT / 0x033 EVENTSTR / 0x034 EVENTNUM: EventNum (the zone, whose event files the client
+// opens) and EventPara (the event). An event the zone's 2010 files do not carry runs on none of the
+// client's entities, and the client never sends its end: the player stays locked (Dkhaaya, zone 50).
+// Such an event is not sent, and the server's side of it is closed without its finish handler, as if
+// it never started (no quest progress, no reward).
+template <size_t kEventNumOffset>
+auto eventGuard(MapSession* PSession, CBasicPacket& packet) -> Result
+{
+    const auto zone  = packet.ref<uint16>(kEventNumOffset);
+    const auto event = packet.ref<uint16>(kEventNumOffset + 2);
+    if (ids::hasEvent(zone, event))
+    {
+        return Result::Pass;
+    }
+
+    auto* PChar = PSession->PChar.get();
+    ShowInfoFmt("ps2: event {} in zone {} is not in the 2010 data; skipped for {}", event, zone, PChar ? PChar->getName() : "?");
+    if (PChar && PChar->currentEvent && PChar->currentEvent->eventId == event)
+    {
+        PChar->endCurrentEvent();
+    }
+    return Result::Drop;
+}
+
 template <size_t kMesNumOffset>
 auto zoneDialog(MapSession* PSession, CBasicPacket& packet) -> Result
 {
@@ -425,6 +450,9 @@ auto zoneDialog(MapSession* PSession, CBasicPacket& packet) -> Result
 void registerS2C_1C()
 {
     registerS2C(0x027, zoneDialog<0x0A>);
+    registerS2C(0x032, eventGuard<0x0A>);
+    registerS2C(0x033, eventGuard<0x0A>);
+    registerS2C(0x034, eventGuard<0x2A>);
     registerS2C(0x02A, zoneDialog<0x1A>);
     registerS2C(0x036, zoneDialog<0x0A>);
 

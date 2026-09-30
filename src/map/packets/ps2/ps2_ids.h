@@ -51,6 +51,12 @@ auto mesNum(uint16 zoneId, uint16 mesNum) -> std::optional<uint16>;
 // map every item is known (nothing is filtered).
 auto hasItem(uint16 itemId) -> bool;
 
+// Does any of the zone's 2010 event files carry this event number? An event it does not have runs on
+// no entity of the client, which then never sends its end (the player stays locked). Event numbers
+// themselves did not shift between versions. (tools/event_map.py -> res/ps2/events.bin.) Without the
+// map every event is known.
+auto hasEvent(uint16 zoneId, uint16 eventId) -> bool;
+
 // Static entities (NPCs, mobs, doors: UniqueNo 0x01000000 | zone << 12 | index, ActIndex = index).
 // The zone's name list in the 2010 DATs has entities inserted since, so indices shift. The map is
 // aligned on the names (tools/entity_map.py -> res/ps2/entity_map.bin). Anything that is not a static

@@ -23,6 +23,7 @@
 
 #include "common/logging.h"
 
+#include <algorithm>
 #include <cstring>
 #include <fstream>
 #include <unordered_map>
@@ -166,6 +167,45 @@ auto hasItem(const uint16 itemId) -> bool
         return true;
     }
     return (bits[itemId >> 3] & (1u << (itemId & 7))) != 0;
+}
+
+auto hasEvent(const uint16 zoneId, const uint16 eventId) -> bool
+{
+    // res/ps2/events.bin: "PS2EVT01", u32 zones, then per zone u16 zone, u32 n, u16 events[n] (sorted)
+    static const auto zones = []
+    {
+        constexpr auto                                  path = "res/ps2/events.bin";
+        std::unordered_map<uint16, std::vector<uint16>> out;
+        std::ifstream                                   f(path, std::ios::binary);
+        char                                            magic[8] = {};
+        uint32                                          count    = 0;
+        if (!f.read(magic, sizeof(magic)) || std::memcmp(magic, "PS2EVT01", 8) != 0 || !f.read(reinterpret_cast<char*>(&count), 4))
+        {
+            ShowWarning("ps2: %s missing or invalid; events are not checked for PS2 clients", path);
+            return out;
+        }
+        for (uint32 i = 0; i < count; ++i)
+        {
+            uint16 zone = 0;
+            uint32 n    = 0;
+            if (!f.read(reinterpret_cast<char*>(&zone), 2) || !f.read(reinterpret_cast<char*>(&n), 4) || n > 0x10000)
+            {
+                break;
+            }
+            auto& events = out[zone];
+            events.resize(n);
+            f.read(reinterpret_cast<char*>(events.data()), static_cast<std::streamsize>(n) * 2);
+        }
+        ShowInfo("ps2: %s: %u zones", path, count);
+        return out;
+    }();
+
+    if (zones.empty())
+    {
+        return true;
+    }
+    const auto it = zones.find(zoneId);
+    return it != zones.end() && std::binary_search(it->second.begin(), it->second.end(), eventId);
 }
 
 auto mesNum(const uint16 zoneId, const uint16 mesNum) -> std::optional<uint16>
