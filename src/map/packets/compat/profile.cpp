@@ -281,6 +281,15 @@ auto findProfile(const Platform platform, const uint32 version, const std::strin
     return byVersion ? byVersion : fallback;
 }
 
+auto zoneAvailable(const MapSession* PSession, const uint16 zoneId) -> bool
+{
+    if (PSession == nullptr || PSession->client.profile == nullptr || zoneId >= 1000)
+    {
+        return true;
+    }
+    return PSession->client.profile->maps().hasZoneData(zoneId);
+}
+
 auto active() -> const Profile&
 {
     // Translators only run inside translateS2C / translateC2S, which set it

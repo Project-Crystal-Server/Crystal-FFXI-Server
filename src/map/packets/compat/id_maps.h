@@ -55,6 +55,9 @@ public:
     // Does the old install have this zone's dialog at all?
     auto hasZone(uint16 zoneId) const -> bool;
 
+    // Does the old install have this zone at all (its dialog or its NPC list)? Without either map, every zone.
+    auto hasZoneData(uint16 zoneId) const -> bool;
+
     // MesNum in 0x027/0x02A/0x036: bit 15 is a display flag, the low 15 bits the dialog line.
     auto mesNum(uint16 zoneId, uint16 mesNum) const -> std::optional<uint16>;
 

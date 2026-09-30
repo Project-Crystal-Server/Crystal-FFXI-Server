@@ -50,6 +50,7 @@
 #include "ai/states/weaponskill_state.h"
 
 #include "packets/char_status.h"
+#include "packets/compat/profile.h"
 #include "packets/char_sync.h"
 #include "packets/s2c/0x009_message.h"
 #include "packets/s2c/0x00b_logout.h"
@@ -6786,6 +6787,21 @@ auto SendToZone(CCharEntity* PChar, const xi::ZoneId zoneId) -> bool
     {
         ShowInfoFmt("charutils::SendToZone : zone {} at player cap, denying {} (gm={})", zoneId, PChar->name, PChar->m_GMlevel);
         return false;
+    }
+
+    // A console client whose install has no files for the zone would stand in it with nothing around
+    // (packets/compat). Send it to its home point instead, if that zone is one it has.
+    const auto homeZone = static_cast<uint16>(PChar->profile.home_point.destination);
+    if (!compat::zoneAvailable(PChar->PSession, static_cast<uint16>(zoneId)) && static_cast<uint16>(zoneId) != homeZone &&
+        compat::zoneAvailable(PChar->PSession, homeZone))
+    {
+        ShowInfoFmt("charutils::SendToZone : {}'s client ({}) has no data for zone {}; sending them to their home point", PChar->name,
+                    PChar->PSession->client.describe(), zoneId);
+        PChar->pushPacket<GP_SERV_COMMAND_SYSTEMMES>(0, 0, MsgStd::CouldNotEnter);
+        PChar->loc.boundary    = 0;
+        PChar->loc.p           = PChar->profile.home_point.p;
+        PChar->loc.destination = PChar->profile.home_point.destination;
+        return SendToZone(PChar, PChar->loc.destination);
     }
 
     db::preparedStmt("UPDATE chars "

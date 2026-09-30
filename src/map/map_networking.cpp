@@ -320,6 +320,22 @@ int32 MapNetworking::recv_parse(uint8* buff, size_t* buffsize, MapSession* PSess
             ShowWarningFmt("recv_parse: charid {}: no translation profile for this console build; it gets today's packets as they are", packetCharID);
         }
 
+        // A character saved in a zone this client's install has no files for starts at its home point instead
+        // (charutils::SendToZone does the same for zone changes)
+        if (const auto rsetZone = db::preparedStmt("SELECT pos_zone, home_zone FROM chars WHERE charid = ? LIMIT 1", packetCharID);
+            rsetZone && rsetZone->rowsCount() != 0 && rsetZone->next())
+        {
+            const auto zone = rsetZone->get<uint16>("pos_zone");
+            const auto home = rsetZone->get<uint16>("home_zone");
+            if (!compat::zoneAvailable(PSession, zone) && compat::zoneAvailable(PSession, home))
+            {
+                ShowInfoFmt("recv_parse: charid {} is in zone {}, which this client has no data for; starting at home point zone {}", packetCharID, zone, home);
+                db::preparedStmt("UPDATE chars SET pos_zone = home_zone, pos_prevzone = home_zone, pos_rot = home_rot, "
+                                 "pos_x = home_x, pos_y = home_y, pos_z = home_z, moghouse = 0, boundary = 0 WHERE charid = ?",
+                                 packetCharID);
+            }
+        }
+
         // We can only get here if an 0x00A (not encrypted) packet was here.
         // If we were pending zones, delete our old char
         if (PSession->blowfish.status == BLOWFISH_PENDING_ZONE)

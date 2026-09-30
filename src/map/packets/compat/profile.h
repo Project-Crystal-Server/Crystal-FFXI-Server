@@ -139,6 +139,11 @@ auto findProfile(Platform platform, uint32 version, const std::string& build = {
 // helpers deep in a translator that need its id maps. Only valid inside a translation.
 auto active() -> const Profile&;
 
+// Can this session's client enter the zone? A console build whose install has no files for it (the 2010 PS2
+// client and every zone past 2010; zones a later build lacks) would stand in an empty zone. Clients without a
+// profile, and instanced zones (1000+), always can.
+auto zoneAvailable(const MapSession* PSession, uint16 zoneId) -> bool;
+
 // Translate one packet of a session that has a profile (PSession->client.profile)
 auto translateS2C(MapSession* PSession, CBasicPacket& packet) -> Result;
 auto translateC2S(MapSession* PSession, CBasicPacket& packet) -> Result;

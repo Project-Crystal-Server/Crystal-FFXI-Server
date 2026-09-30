@@ -134,6 +134,15 @@ auto IdMaps::hasZone(const uint16 zoneId) const -> bool
     return dialog_.contains(zoneId);
 }
 
+auto IdMaps::hasZoneData(const uint16 zoneId) const -> bool
+{
+    if (dialog_.empty() && entity_.empty())
+    {
+        return true;
+    }
+    return dialog_.contains(zoneId) || entity_.contains(zoneId);
+}
+
 auto IdMaps::mesNum(const uint16 zoneId, const uint16 mesNum) const -> std::optional<uint16>
 {
     const auto line = dialog(zoneId, mesNum & 0x7FFF);
