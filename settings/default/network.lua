@@ -40,6 +40,12 @@ xi.settings.network =
     LOBBY_ACCOUNTS_URL = '',
     LOBBY_ACCOUNTS_KEY = '',
 
+    -- The PlayOnline lobby's way into this world (/api/lobby on the HTTP server below): the lobby lists, creates,
+    -- renames and deletes characters and admits them to the world through it, never through this database.
+    -- LOBBY_API_KEY is this world's apiKey in the lobby's lobby.cfg; empty: the API is off. A key also turns the
+    -- HTTP server on; set HTTP_HOST so the lobby can reach it (0.0.0.0, or the private address it is on).
+    LOBBY_API_KEY = '',
+
     -- DB queries will attempt each query once, and reconnect and retry up to `SQL_QUERY_RETRY_COUNT` times.
     SQL_QUERY_RETRY_COUNT = 1,
 

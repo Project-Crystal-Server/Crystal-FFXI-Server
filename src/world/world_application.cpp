@@ -49,6 +49,7 @@ WorldApplication::~WorldApplication() = default;
 
 auto WorldApplication::createEngine() -> std::unique_ptr<Engine>
 {
-    const auto httpEnabled = settings::get<bool>("network.ENABLE_HTTP");
+    // The lobby reaches the world through its HTTP API, so a world that serves a lobby needs the server up
+    const auto httpEnabled = settings::get<bool>("network.ENABLE_HTTP") || !settings::get<std::string>("network.LOBBY_API_KEY").empty();
     return std::make_unique<WorldEngine>(scheduler_, zmqService_, WorldEngine::EnableHTTPServer{ httpEnabled });
 }
