@@ -41,7 +41,6 @@
 //   POST /api/lobby/sessions/enter         {"contentId","charId","key":"<40 hex>","serverAddr","serverPort",
 //                                           "clientAddr","clientVersion","clientExpansions","lobbyToken"}  200 {}
 //   GET  /api/lobby/session                X-Lobby-Session: <lobbyToken>           200 {"contentId":1,"charId":1}
-//   GET  /api/lobby/world                                                          200 {"expansions":4095}
 //
 // A refusal is 4xx with {"error":<lobby error code>} for a name (313 unavailable, 314 name server failure) and
 // {"error":0,"message":"..."} for anything else; 401 for a wrong key, 5xx when the database fails.

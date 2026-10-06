@@ -516,31 +516,6 @@ void sessionOwner(const httplib::Request& req, httplib::Response& res)
     reply(res, 200, { { "contentId", rset->get<uint32>("accid") }, { "charId", rset->get<uint32>("charid") } });
 }
 
-// The expansions this world enables, as the lobby login's expansion bitmask (EXPANSION_DISPLAY)
-void worldInfo(const httplib::Request& /*req*/, httplib::Response& res)
-{
-    uint32 expansions = 0x0001; // base game
-    const std::array<std::pair<const char*, uint32>, 9> enabled = { {
-        { "main.ENABLE_ROTZ", 0x0002 },
-        { "main.ENABLE_COP", 0x0004 },
-        { "main.ENABLE_TOAU", 0x0008 },
-        { "main.ENABLE_WOTG", 0x0010 },
-        { "main.ENABLE_ACP", 0x0020 },
-        { "main.ENABLE_AMK", 0x0040 },
-        { "main.ENABLE_ASA", 0x0080 },
-        { "main.ENABLE_ABYSSEA", 0x0100 | 0x0200 | 0x0400 }, // Visions, Scars, Heroes
-        { "main.ENABLE_SOA", 0x0800 },
-    } };
-    for (const auto& [key, bits] : enabled)
-    {
-        if (settings::get<bool>(key))
-        {
-            expansions |= bits;
-        }
-    }
-    reply(res, 200, { { "expansions", expansions } });
-}
-
 } // namespace
 
 void registerRoutes(httplib::Server& server)
@@ -553,7 +528,6 @@ void registerRoutes(httplib::Server& server)
     server.Post("/api/lobby/characters/online", handle(online));
     server.Post("/api/lobby/sessions/enter", handle(enterWorld));
     server.Get("/api/lobby/session", handle(sessionOwner));
-    server.Get("/api/lobby/world", handle(worldInfo));
 }
 
 } // namespace lobby_api
