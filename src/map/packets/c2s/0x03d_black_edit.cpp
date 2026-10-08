@@ -47,7 +47,7 @@ void GP_CLI_COMMAND_BLACK_EDIT::process(MapSession* PSession, CCharEntity* PChar
 {
     const auto name = db::escapeString(asStringFromUntrustedSource(this->Data.Name, 15));
 
-    const auto [charid, accid] = charutils::getCharIdAndAccountIdFromName(name);
+    const auto charid = charutils::getCharIdAndAccountIdFromName(name).first;
     if (!charid)
     {
         sendFailPacket(PChar);
@@ -60,7 +60,7 @@ void GP_CLI_COMMAND_BLACK_EDIT::process(MapSession* PSession, CCharEntity* PChar
         {
             if (blacklistutils::AddBlacklisted(PChar->id, charid))
             {
-                PChar->pushPacket<GP_SERV_COMMAND_BLACK_EDIT>(accid, name, GP_SERV_COMMAND_BLACK_EDIT_MODE::Add);
+                PChar->pushPacket<GP_SERV_COMMAND_BLACK_EDIT>(charid, name, GP_SERV_COMMAND_BLACK_EDIT_MODE::Add);
             }
             else
             {
@@ -72,7 +72,7 @@ void GP_CLI_COMMAND_BLACK_EDIT::process(MapSession* PSession, CCharEntity* PChar
         {
             if (blacklistutils::DeleteBlacklisted(PChar->id, charid))
             {
-                PChar->pushPacket<GP_SERV_COMMAND_BLACK_EDIT>(accid, name, GP_SERV_COMMAND_BLACK_EDIT_MODE::Delete);
+                PChar->pushPacket<GP_SERV_COMMAND_BLACK_EDIT>(charid, name, GP_SERV_COMMAND_BLACK_EDIT_MODE::Delete);
             }
             else
             {

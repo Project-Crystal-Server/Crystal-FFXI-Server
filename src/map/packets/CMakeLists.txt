@@ -1,6 +1,12 @@
 add_subdirectory(c2s)
 add_subdirectory(s2c)
 
+# Older client builds: client identity and translation profiles (packets/compat/profile.h), and the
+# console clients' profiles (packets/console/console_profile.h)
+file(GLOB PACKET_PS2_SOURCES CONFIGURE_DEPENDS
+    ${CMAKE_CURRENT_SOURCE_DIR}/compat/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/compat/*.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/console/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/console/*.h)
+
 set(PACKET_C2S_SOURCES
     ${PACKET_C2S_SOURCES}
     PARENT_SCOPE
@@ -21,5 +27,6 @@ set(PACKET_S2C_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/entity_update.h
     ${CMAKE_CURRENT_SOURCE_DIR}/pet_sync.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/pet_sync.h
+    ${PACKET_PS2_SOURCES}
     PARENT_SCOPE
 )

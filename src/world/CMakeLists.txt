@@ -15,6 +15,8 @@ set(SOURCES
     http_server.h
     ipc_server.cpp
     ipc_server.h
+    lobby_api.cpp
+    lobby_api.h
     party_system.cpp
     party_system.h
     time_server.h
