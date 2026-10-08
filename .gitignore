@@ -276,3 +276,7 @@ clang_tidy_summary.md
 /data/schemas/*.schema.json
 !/data/schemas/_*.schema.json
 xi_data_schema
+
+# Id maps for console clients (res/compat/<profile>/*.bin, built by the FFXI-PS2 tools). Keep them tracked even if
+# a broad *.bin rule is ever added above.
+!/res/compat/**/*.bin
