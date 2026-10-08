@@ -61,3 +61,12 @@ Download the latest version from the website or check your package manager.
 ## Other
 `./install-systemd-service.sh` - Installs a systemd service for running the servers on Linux.  
 `./run_clang_format.py` - Formats C++ code. Run from repo root.  
+
+## Console Id Maps
+`sh compat/build_maps.sh <older install root> <cache tag> <profile> [high shift]`  
+`python compat/entity_map_suffix.py <in entity_map.bin> [<out entity_map.bin>]`
+
+These build the `res/compat/<profile>/*.bin` files that translate ids for older console clients (the 2010 PS2 build):
+dialog lines, NPC indices, events and items. They need the older install (`XI_OLD`) and a current one (`XI_PC`) on
+the same machine. The file formats, how the map server uses them and the environment variables are documented in
+`../res/compat/README.md`.

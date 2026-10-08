@@ -24,10 +24,20 @@
 #include "common/cbasetypes.h"
 #include "data_loader.h"
 
+// How a player entry is laid out on the wire. Today's clients read the area as 10 bits and know the flags2 and
+// language fields by the tags 0x16 and 0x17. The 2010 PS2 client (parser FUN_003bece0 in ffxi_pol) reads the area as
+// 8 bits (names exist for 1-252 only) and knows flags2 and language by the tags 0x14 and 0x15; with the wider area
+// every field after it is read 2 bits off, so it shows another zone and no job or level.
+enum class SearchListLayout : uint8
+{
+    Current,
+    Ps2_2010,
+};
+
 class CSearchListPacket
 {
 public:
-    CSearchListPacket(uint32 Total);
+    CSearchListPacket(uint32 Total, SearchListLayout layout = SearchListLayout::Current);
 
     auto AddPlayer(const SearchEntity& player) -> bool;
     void SetFinal();
@@ -36,6 +46,7 @@ public:
     auto GetSize() const -> uint16;
 
 private:
-    uint32 m_offset{};
-    uint8  m_data[1024]{};
+    uint32           m_offset{};
+    uint8            m_data[1024]{};
+    SearchListLayout m_layout{ SearchListLayout::Current };
 };

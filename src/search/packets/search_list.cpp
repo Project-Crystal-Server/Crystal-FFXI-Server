@@ -29,8 +29,9 @@
 #include <algorithm>
 #include <cstring>
 
-CSearchListPacket::CSearchListPacket(const uint32 Total)
+CSearchListPacket::CSearchListPacket(const uint32 Total, const SearchListLayout layout)
 : m_offset(192)
+, m_layout(layout)
 {
     memset(m_data, 0, sizeof(m_data));
 
@@ -60,8 +61,15 @@ auto CSearchListPacket::AddPlayer(const SearchEntity& player) -> bool
         m_offset = packBitsLE(m_data, player.name[c], m_offset, 7);
     }
 
+    // The 2010 PS2 client reads 8 bits and has area names for 1-252 only: send 0 ("unknown") for a zone it cannot hold
+    const bool ps2         = m_layout == SearchListLayout::Ps2_2010;
+    const auto areaBits    = ps2 ? 8 : 10;
+    const auto areaValue   = ps2 ? (player.zone <= 0xFF ? player.zone : 0) : player.zone;
+    const auto flags2Tag   = ps2 ? uint64(0x14) : static_cast<uint64>(SearchType::Flags2);
+    const auto languageTag = ps2 ? uint64(0x15) : static_cast<uint64>(SearchType::Language);
+
     m_offset = packBitsLE(m_data, static_cast<uint64>(SearchType::Area), m_offset, 5);
-    m_offset = packBitsLE(m_data, player.zone, m_offset, 10);
+    m_offset = packBitsLE(m_data, areaValue, m_offset, areaBits);
 
     if (!(player.flags1 & 0x4000))
     {
@@ -101,10 +109,10 @@ auto CSearchListPacket::AddPlayer(const SearchEntity& player) -> bool
         m_offset = packBitsLE(m_data, player.seacom_type, m_offset, 32);
     }
 
-    m_offset = packBitsLE(m_data, static_cast<uint64>(SearchType::Flags2), m_offset, 5);
+    m_offset = packBitsLE(m_data, flags2Tag, m_offset, 5);
     m_offset = packBitsLE(m_data, player.flags2, m_offset, 32);
 
-    m_offset = packBitsLE(m_data, static_cast<uint64>(SearchType::Language), m_offset, 5);
+    m_offset = packBitsLE(m_data, languageTag, m_offset, 5);
     m_offset = packBitsLE(m_data, player.languages, m_offset, 16);
 
     if (m_offset % 8 > 0)
