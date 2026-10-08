@@ -20,7 +20,9 @@ xi.settings.network =
     LOGIN_DATA_IP   = '0.0.0.0',
     LOGIN_DATA_PORT = 54230,
     LOGIN_VIEW_IP   = '0.0.0.0',
-    LOGIN_VIEW_PORT = 54001,
+    -- 54001 belongs to the Project Crystal lobby: PlayOnline clients (PS2 and PC) cannot be pointed
+    -- anywhere else. xiloader can: launch it with --viewport 54004.
+    LOGIN_VIEW_PORT = 54004,
     LOGIN_AUTH_IP   = '0.0.0.0',
     LOGIN_AUTH_PORT = 54231,
 
@@ -29,6 +31,20 @@ xi.settings.network =
     SEARCH_PORT = 54002,
 
     PROFILE_PORT = 51220,
+    -- polcore dials 51240 for IRC; move it only together with the loader (xiloader --ircport).
+    PROFILE_IRC_PORT = 51240,
+
+    -- The PlayOnline lobby's account service: which PlayOnline account a character belongs to, for account-wide
+    -- limits and account-only deliveries. LOBBY_ACCOUNTS_KEY is this world's accountsKey in the lobby's lobby.cfg.
+    -- Empty: every character is an account of its own.
+    LOBBY_ACCOUNTS_URL = '',
+    LOBBY_ACCOUNTS_KEY = '',
+
+    -- The PlayOnline lobby's way into this world (/api/lobby on the HTTP server below): the lobby lists, creates,
+    -- renames and deletes characters and admits them to the world through it, never through this database.
+    -- LOBBY_API_KEY is this world's apiKey in the lobby's lobby.cfg; empty: the API is off. A key also turns the
+    -- HTTP server on; set HTTP_HOST so the lobby can reach it (0.0.0.0, or the private address it is on).
+    LOBBY_API_KEY = '',
 
     -- DB queries will attempt each query once, and reconnect and retry up to `SQL_QUERY_RETRY_COUNT` times.
     SQL_QUERY_RETRY_COUNT = 1,

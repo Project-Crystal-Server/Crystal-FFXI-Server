@@ -28,9 +28,11 @@
 #include "entities/char_entity.h"
 
 #include "packets/basic.h"
+#include "packets/compat/profile.h"
 #include "packets/s2c/0x00b_logout.h"
 
 #include "utils/charutils.h"
+#include "utils/lobbyutils.h"
 #include "utils/zoneutils.h"
 
 #include "ipc_client.h"
@@ -41,6 +43,18 @@
 #include "zone_entities.h"
 
 extern std::map<xi::ZoneId, CZone*> g_PZoneList; // Global array of pointers for zones
+
+namespace
+{
+
+// Did a lobby write a session for this character, for the address the 0x00A came from?
+auto hasLobbySession(const uint32 charId, const IPP& ipp) -> bool
+{
+    const auto rset = db::preparedStmt("SELECT charid FROM accounts_sessions WHERE charid = ? AND client_addr = ? LIMIT 1", charId, ipp.getIP());
+    return rset && rset->rowsCount() != 0;
+}
+
+} // namespace
 
 MapNetworking::MapNetworking(Scheduler& scheduler, MapStatistics& mapStatistics, MapConfig config)
 : scheduler_(scheduler)
@@ -260,6 +274,19 @@ int32 MapNetworking::recv_parse(uint8* buff, size_t* buffsize, MapSession* PSess
                     return -1;
                 }
             }
+            else if (hasLobbySession(packetCharID, ipp))
+            {
+                // A login from a lobby that does not announce it over IPC (the Project Crystal
+                // lobby, for PlayOnline clients): it wrote the session row, for this client address,
+                // after authenticating the member. The session key in that row still has to decrypt
+                // everything that follows.
+                ShowInfoFmt("recv_parse: charid {} from {} has a lobby session but no pending one; accepting it", packetCharID, ipp.toString());
+                PSession = mapSessions_.createSession(ipp);
+                if (PSession == nullptr)
+                {
+                    return -1;
+                }
+            }
             else
             {
                 // unknown00 goes up by one on every client retry
@@ -287,6 +314,40 @@ int32 MapNetworking::recv_parse(uint8* buff, size_t* buffsize, MapSession* PSess
             return -1;
         }
 
+        // Every client names its platform and build here; a build with a translation profile has its
+        // packets translated from now on (packets/compat)
+        // Consoles send Ver 0: the build comes from the version string their lobby login stored for the session
+        std::string build;
+        uint32      expansions = 0;
+        if (const auto rsetBuild = db::preparedStmt("SELECT client_version, client_expansions FROM accounts_sessions WHERE charid = ? LIMIT 1", packetCharID);
+            rsetBuild && rsetBuild->rowsCount() != 0 && rsetBuild->next())
+        {
+            build      = rsetBuild->get<std::string>("client_version");
+            expansions = rsetBuild->get<uint32>("client_expansions");
+        }
+        PSession->client = compat::identify(loginPacket.sPlatform, loginPacket.Ver, build, expansions);
+        ShowInfoFmt("recv_parse: charid {} from {}: client {}", packetCharID, ipp.toString(), PSession->client.describe());
+        if (PSession->client.console() && !PSession->client.translated())
+        {
+            ShowWarningFmt("recv_parse: charid {}: no translation profile for this console build; it gets today's packets as they are", packetCharID);
+        }
+
+        // A character saved in a zone this client's install has no files for starts at its home point instead
+        // (charutils::SendToZone does the same for zone changes)
+        if (const auto rsetZone = db::preparedStmt("SELECT pos_zone, home_zone FROM chars WHERE charid = ? LIMIT 1", packetCharID);
+            rsetZone && rsetZone->rowsCount() != 0 && rsetZone->next())
+        {
+            const auto zone = rsetZone->get<uint16>("pos_zone");
+            const auto home = rsetZone->get<uint16>("home_zone");
+            if (!compat::zoneAvailable(PSession, zone) && compat::zoneAvailable(PSession, home))
+            {
+                ShowInfoFmt("recv_parse: charid {} is in zone {}, which this client has no data for; starting at home point zone {}", packetCharID, zone, home);
+                db::preparedStmt("UPDATE chars SET pos_zone = home_zone, pos_prevzone = home_zone, pos_rot = home_rot, "
+                                 "pos_x = home_x, pos_y = home_y, pos_z = home_z, moghouse = 0, boundary = 0 WHERE charid = ?",
+                                 packetCharID);
+            }
+        }
+
         // We can only get here if an 0x00A (not encrypted) packet was here.
         // If we were pending zones, delete our old char
         if (PSession->blowfish.status == BLOWFISH_PENDING_ZONE)
@@ -301,7 +362,7 @@ int32 MapNetworking::recv_parse(uint8* buff, size_t* buffsize, MapSession* PSess
 
             std::ignore = langID;
 
-            auto rset = db::preparedStmt("SELECT c.accid, s.session_key "
+            auto rset = db::preparedStmt("SELECT c.accid, s.session_key, s.lobby_token "
                                          "FROM chars c "
                                          "LEFT JOIN accounts_sessions s ON s.charid = c.charid "
                                          "WHERE c.charid = ? LIMIT 1",
@@ -325,11 +386,15 @@ int32 MapNetworking::recv_parse(uint8* buff, size_t* buffsize, MapSession* PSess
                 return -1;
             }
 
+            const auto lobbyToken = rset->isNull("lobby_token") ? std::string() : rset->get<std::string>("lobby_token");
+
             PSession->PChar     = charutils::LoadChar(packetCharID);
             PSession->charID    = packetCharID;
             PSession->accountID = accountID;
 
             auto* PChar = PSession->PChar.get();
+
+            lobbyutils::loadAccount(PChar, lobbyToken);
 
             PChar->PSession = PSession;
 
@@ -470,6 +535,12 @@ int32 MapNetworking::parse(uint8* buff, size_t* buffsize, MapSession* PSession)
             // Reuse one CBasicPacket (parseScratchPacket_) across the loop instead of re-allocating per inbound packet.
             // We're copying in and bounding only exactly what we want, so it's safe.
             std::memcpy(&parseScratchPacket_.ref<uint8>(0), SmallPD_ptr, PACKET_SIZE);
+
+            if (PSession->client.translated() && compat::translateC2S(PSession, parseScratchPacket_) == compat::Result::Drop)
+            {
+                continue;
+            }
+
             ShowTraceFmt("map::parse: Char: {} ({}): {}", PChar->getName(), PChar->id, hex16ToString(parseScratchPacket_.getType()));
             packetSystem_.dispatch(SmallPD_Type, PSession, PChar, parseScratchPacket_);
         }
@@ -504,6 +575,11 @@ int32 MapNetworking::parse(uint8* buff, size_t* buffsize, MapSession* PSession)
 
     if (ref<uint16>(buff, 2) != PSession->server_packet_id)
     {
+        if (PSession->client.translated() && compat::tracing())
+        {
+            ShowInfoFmt("compat trace: client acked {}, server is at {}: resending the last datagram", ref<uint16>(buff, 2), PSession->server_packet_id);
+        }
+
         // If the client and server have become out of sync, then caching takes place. However, caching
         // zone packets will result in the client never properly connecting. Ignore those specifically.
         if (SmallPD_Type == static_cast<uint16>(PacketC2S::GP_CLI_COMMAND_LOGIN))
@@ -544,6 +620,7 @@ int32 MapNetworking::send_parse(uint8* buff, size_t* buffsize, MapSession* PSess
     size_t PacketSize               = static_cast<size_t>(UINT32_MAX);
     size_t PacketCount              = std::clamp<size_t>(PChar->getPacketCount(), 0, kMaxPacketPerCompression);
     uint8  packets                  = 0;
+    uint8  consumed                 = 0; // taken off the queue: packets plus those the PS2 translation dropped
     bool   incrementKeyAfterEncrypt = false;
 
     mapStatistics_.increment(MapStatistics::Key::TotalPacketsToSendPerTick, static_cast<uint32>(PChar->getPacketCount()));
@@ -560,6 +637,7 @@ int32 MapNetworking::send_parse(uint8* buff, size_t* buffsize, MapSession* PSess
 
             *buffsize = FFXI_HEADER_SIZE;
             packets   = 0;
+            consumed  = 0;
 
             auto packetList = [&]
             {
@@ -568,10 +646,11 @@ int32 MapNetworking::send_parse(uint8* buff, size_t* buffsize, MapSession* PSess
                 return PChar->getPacketListCopy();
             }();
 
-            while (!packetList.empty() && *buffsize + packetList.front()->getSize() < kMaxBufferSize && static_cast<size_t>(packets) < PacketCount)
+            while (!packetList.empty() && *buffsize + packetList.front()->getSize() < kMaxBufferSize && static_cast<size_t>(packets) < PacketCount && consumed < UINT8_MAX)
             {
                 PSmallPacket = std::move(packetList.front());
                 packetList.pop_front();
+                consumed++;
 
                 PSmallPacket->setSequence(PSession->server_packet_id);
                 auto type = PSmallPacket->getType();
@@ -601,11 +680,35 @@ int32 MapNetworking::send_parse(uint8* buff, size_t* buffsize, MapSession* PSess
                     }
                 }
 
+                // packetList is a fresh copy on every attempt, so translating in place is safe
+                // A dropped packet still counts as consumed, or it (and what follows) would be sent again;
+                // only what goes in the datagram counts against PacketCount (a PS2 zone-in drops dozens).
+                if (PSession->client.translated() && compat::translateS2C(PSession, *PSmallPacket) == compat::Result::Drop)
+                {
+                    std::ignore = compat::takeEmittedS2C();
+                    continue;
+                }
+
                 std::memcpy(buff + *buffsize, *PSmallPacket, PSmallPacket->getSize());
 
                 *buffsize += PSmallPacket->getSize();
 
                 packets++;
+
+                // A translator may have split the packet in two (packets/compat/profile.h emitS2C)
+                if (PSession->client.translated())
+                {
+                    for (auto& extra : compat::takeEmittedS2C())
+                    {
+                        if (extra.size() < 4 || *buffsize + extra.size() >= kMaxBufferSize)
+                        {
+                            break; // resent with the next copy of the original packet
+                        }
+                        ref<uint16>(extra.data(), 2) = PSmallPacket->getSequence();
+                        std::memcpy(buff + *buffsize, extra.data(), extra.size());
+                        *buffsize += extra.size();
+                    }
+                }
             }
 
             PacketCount -= PacketCount / 3;
@@ -642,7 +745,7 @@ int32 MapNetworking::send_parse(uint8* buff, size_t* buffsize, MapSession* PSess
         }
     } while (PacketSize == static_cast<uint32>(-1));
 
-    PChar->erasePackets(packets);
+    PChar->erasePackets(consumed);
 
     mapStatistics_.increment(MapStatistics::Key::TotalPacketsSentPerTick, static_cast<uint32>(packets));
     TracyZoneString(fmt::format("Sending {} packets", packets));

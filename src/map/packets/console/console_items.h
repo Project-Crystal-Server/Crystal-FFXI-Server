@@ -1,7 +1,7 @@
 /*
 ===========================================================================
 
-  Copyright (c) 2025 LandSandBoat Dev Teams
+  Copyright (c) 2026 LandSandBoat Dev Teams
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -21,26 +21,13 @@
 
 #pragma once
 
-#include "base.h"
-#include "common/cbasetypes.h"
-#include "packets/c2s/0x03d_black_edit.h"
+#include "console_client.h"
 
-enum class GP_SERV_COMMAND_BLACK_EDIT_MODE : int8_t
+namespace console
 {
-    Add    = 0,
-    Delete = 1,
-    Error  = 2,
-};
 
-class GP_SERV_COMMAND_BLACK_EDIT final : public GP_SERV_PACKET<PacketS2C::GP_SERV_COMMAND_BLACK_EDIT, GP_SERV_COMMAND_BLACK_EDIT>
-{
-public:
-    struct PacketData
-    {
-        SAVE_BLACK                      Data;         // PS2: Data
-        GP_SERV_COMMAND_BLACK_EDIT_MODE Mode;         // PS2: Mode
-        uint8_t                         padding00[3]; // PS2: (New; did not exist.)
-    };
+// Keeps items the 2010 install does not have (ids::hasItem) away from the PS2 client, which would
+// show them as "." placeholders. Runs on the 2010 layout, after the s2c translators (console_items.cpp).
+auto filterItemsS2C(MapSession* PSession, CBasicPacket& packet) -> Result;
 
-    GP_SERV_COMMAND_BLACK_EDIT(uint32 charId, const std::string& targetName, GP_SERV_COMMAND_BLACK_EDIT_MODE mode);
-};
+} // namespace console

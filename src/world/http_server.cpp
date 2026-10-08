@@ -21,6 +21,8 @@
 
 #include "http_server.h"
 
+#include "lobby_api.h"
+
 #include "common/database.h"
 #include "common/logging.h"
 #include "common/settings.h"
@@ -164,6 +166,9 @@ HTTPServer::HTTPServer(Scheduler& scheduler)
 
                     res.set_content(j.dump(), "application/json");
                 });
+
+            // The PlayOnline lobby's API (answers 404 until network.LOBBY_API_KEY is set)
+            lobby_api::registerRoutes(httpServer_);
 
             httpServer_.set_error_handler(
                 [](const httplib::Request& /*req*/, httplib::Response& res)

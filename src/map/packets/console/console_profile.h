@@ -1,7 +1,7 @@
 /*
 ===========================================================================
 
-  Copyright (c) 2025 LandSandBoat Dev Teams
+  Copyright (c) 2026 LandSandBoat Dev Teams
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -21,26 +21,20 @@
 
 #pragma once
 
-#include "base.h"
-#include "common/cbasetypes.h"
-#include "packets/c2s/0x03d_black_edit.h"
+#include "packets/compat/profile.h"
 
-enum class GP_SERV_COMMAND_BLACK_EDIT_MODE : int8_t
+#include <memory>
+
+namespace console
 {
-    Add    = 0,
-    Delete = 1,
-    Error  = 2,
-};
 
-class GP_SERV_COMMAND_BLACK_EDIT final : public GP_SERV_PACKET<PacketS2C::GP_SERV_COMMAND_BLACK_EDIT, GP_SERV_COMMAND_BLACK_EDIT>
-{
-public:
-    struct PacketData
-    {
-        SAVE_BLACK                      Data;         // PS2: Data
-        GP_SERV_COMMAND_BLACK_EDIT_MODE Mode;         // PS2: Mode
-        uint8_t                         padding00[3]; // PS2: (New; did not exist.)
-    };
+// The retail PS2 client, SCUS-97266 at patch 20100904_2: its layouts (the translators in ps2_s2c_*.cpp,
+// ps2_c2s.cpp), the ids it has a handler for, and its id maps in res/compat/ps2-20100904/.
+auto makeProfile20100904() -> std::unique_ptr<compat::Profile>;
 
-    GP_SERV_COMMAND_BLACK_EDIT(uint32 charId, const std::string& targetName, GP_SERV_COMMAND_BLACK_EDIT_MODE mode);
-};
+// The final console clients, PS2 patch 20160203_0 and Xbox 360 40160203_0: one netcode (console_2016.cpp and
+// the 2010 translators that still apply), each with its own id maps (res/compat/ps2-20160203/,
+// res/compat/x360-40160203/). Pass Platform::PS2 or Platform::Xbox360.
+auto makeProfile20160203(compat::Platform platform) -> std::unique_ptr<compat::Profile>;
+
+} // namespace console
