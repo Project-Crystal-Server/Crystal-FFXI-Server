@@ -21,6 +21,8 @@
 
 #include "search_handler.h"
 
+#include "common/database.h"
+#include "common/ipp.h"
 #include "common/md52.h"
 #include "common/timer.h"
 #include "common/utils.h"
@@ -31,8 +33,10 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstring>
+#include <fstream>
 #include <iterator>
 #include <map>
+#include <string>
 #include <unordered_set>
 
 #include "packets/auction_history.h"
@@ -41,6 +45,47 @@
 #include "packets/party_list.h"
 #include "packets/search_comment.h"
 #include "packets/search_list.h"
+
+namespace
+{
+
+// The lobby version strings of the 2010 PS2 client: the same lines the map server pins to that client in
+// res/compat/ps2-20100904/versions.txt (one per line, # starts a comment)
+auto ps2_2010Builds() -> const std::unordered_set<std::string>&
+{
+    static const auto builds = []
+    {
+        std::unordered_set<std::string> out;
+        std::ifstream                   file("res/compat/ps2-20100904/versions.txt");
+        std::string                     line;
+        while (std::getline(file, line))
+        {
+            line             = line.substr(0, line.find('#'));
+            const auto begin = line.find_first_not_of(" \t\r");
+            if (begin == std::string::npos)
+            {
+                continue;
+            }
+            out.insert(line.substr(begin, line.find_last_not_of(" \t\r") - begin + 1));
+        }
+        return out;
+    }();
+    return builds;
+}
+
+// The layout a search result has to take for the client behind this connection. The client is known by the version
+// string its lobby login stored on the session of its address (the same lookup the map server makes).
+auto searchLayoutFor(const std::string& ipAddress) -> SearchListLayout
+{
+    const auto rset = db::preparedStmt("SELECT client_version FROM accounts_sessions WHERE client_addr = ? AND client_version <> '' LIMIT 1", str2ip(ipAddress));
+    if (rset && rset->rowsCount() != 0 && rset->next() && ps2_2010Builds().contains(rset->get<std::string>("client_version")))
+    {
+        return SearchListLayout::Ps2_2010;
+    }
+    return SearchListLayout::Current;
+}
+
+} // namespace
 
 SearchHandler::SearchHandler(Scheduler& scheduler, asio::ip::tcp::socket socket, SynchronizedShared<std::map<std::string, uint16_t>>& IPAddressesInUseList, SynchronizedShared<std::unordered_set<std::string>>& IPAddressWhitelist)
 : scheduler_(scheduler)
@@ -469,13 +514,15 @@ void SearchHandler::SendPlayersList(const SearchRequest& sr)
     const uint32 totalResults  = static_cast<uint32>(SearchList.size());
     uint32       currentResult = 0;
 
+    const auto layout = searchLayoutFor(ipAddress_);
+
     // Iterate through the search list, splitting up the results into
     // smaller chunks.
     auto it = SearchList.begin();
 
     do
     {
-        CSearchListPacket PSearchPacket(totalCount);
+        CSearchListPacket PSearchPacket(totalCount, layout);
 
         while (currentResult < totalResults)
         {

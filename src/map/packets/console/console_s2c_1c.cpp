@@ -321,10 +321,10 @@ auto serverStatus(MapSession* /* PSession */, CBasicPacket& packet) -> Result
         }
     }
 
-    // Flags3 byte +0x38: bit 3 NewCharacterFlag, bit 4 MentorFlag are 2013 features; the 2010
-    // client maps these bits to other actor flags (0x114 bits 4 and 3).
-    rw.out<uint8>(0x38, static_cast<uint8>(rw.in<uint8>(0x38) & ~0x18));
-
+    // Flags3 byte +0x38 is passed on as it is. Bit 3 (NewCharacterFlag) and bit 4 (MentorFlag) go to actor flags
+    // 0x114 bits 4 and 3, the same two bits RecvCharPc sets from +0x2A bit 7 and +0x2B bit 0 of the 0x00D (the
+    // New Adventurer and Mentor icons: the client has the Mentor Program texts and /mentor). RecvServerStatus
+    // assigns them, so clearing them here wiped what the 0x00D had set within seconds.
     std::memset(static_cast<uint8*>(packet) + 0x4C, 0, PACKET_SIZE - 0x4C);
     rw.out<uint32>(0x4C, bits1);
     packet.setSize(0x50);
