@@ -313,6 +313,7 @@ auto groupList(MapSession*, CBasicPacket& packet) -> Result
     rw.clear(size - 8);
     rw.move(0x04, 0x04, 0x1B); // UniqueNo .. Mpp
     rw.out<uint8>(0x1C, *kind);
+    rw.out<uint32>(0x10, tpPercent(rw.in<uint32>(0x10)));
     rw.out<uint8>(0x1F, zoneByte(rw.in<uint16>(0x20)));
     rw.move(0x28, 0x20, 16);
     return Result::Rewritten;
@@ -330,6 +331,7 @@ auto groupAttr(MapSession*, CBasicPacket& packet) -> Result
     }
 
     packet.ref<uint8>(0x18) = *kind;
+    packet.ref<uint32>(0x10) = tpPercent(packet.ref<uint32>(0x10));
     packet.setSize(0x1C);
     return Result::Rewritten;
 }

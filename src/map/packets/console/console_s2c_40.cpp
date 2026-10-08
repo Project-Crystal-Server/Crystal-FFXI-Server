@@ -255,6 +255,7 @@ auto s2c068PetSync(MapSession*, CBasicPacket& packet) -> Result
         return Result::Drop;
     }
 
+    packet.ref<uint32>(0x10) = tpPercent(packet.ref<uint16>(0x10));
     packet.setType(0x067);
     return Result::Rewritten;
 }
