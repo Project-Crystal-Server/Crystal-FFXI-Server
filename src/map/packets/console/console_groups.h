@@ -25,6 +25,7 @@
 
 #include "packets/basic.h"
 
+#include <algorithm>
 #include <cstring>
 
 // Translator groups. Each console_<dir>_<group>.cpp defines one register function; registerGroups calls them all
@@ -46,6 +47,12 @@ inline void registerGroups(compat::Profile& p)
     registerS2C_40(p);
     registerS2C_80(p);
     registerC2S(p);
+}
+
+// The server keeps TP as 0-3000; the 2010 client shows and stores it as a percent (1-300).
+inline auto tpPercent(const uint32 tp) -> uint32
+{
+    return tp == 0 ? 0 : std::max<uint32>(1, tp / 10);
 }
 
 // Helpers for translators: work on a copy of the payload so fields can move in either direction.
