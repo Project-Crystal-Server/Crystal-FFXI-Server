@@ -92,28 +92,6 @@ ExecStart=$PPWD/xi_map
 [Install]
 WantedBy=xi.service
 """
-# Systemd connect server service
-SYSTEMD_CONNECT="""
-[Unit]
-Description=xi Connect Server
-Wants=network.target
-StartLimitIntervalSec=120
-StartLimitBurst=5
-PartOf=xi.service
-After=xi.service
-
-[Service]
-Type=simple
-Restart=always
-RestartSec=5
-User=$XI_USER
-Group=$XI_USER
-WorkingDirectory=$PPWD
-ExecStart=$PPWD/xi_connect
-
-[Install]
-WantedBy=xi.service
-"""
 # Systemd search server service
 SYSTEMD_SEARCH="""
 [Unit]
@@ -132,28 +110,6 @@ User=$XI_USER
 Group=$XI_USER
 WorkingDirectory=$PPWD
 ExecStart=$PPWD/xi_search
-
-[Install]
-WantedBy=xi.service
-"""
-
-SYSTEMD_PROFILE="""
-[Unit]
-Description=xi Profile Server
-Wants=network.target
-StartLimitIntervalSec=120
-StartLimitBurst=5
-PartOf=xi.service
-After=xi.service
-
-[Service]
-Type=simple
-Restart=always
-RestartSec=5
-User=$XI_USER
-Group=$XI_USER
-WorkingDirectory=$PPWD
-ExecStart=$PPWD/xi_profile
 
 [Install]
 WantedBy=xi.service
@@ -186,12 +142,10 @@ chown -R $XI_USER:$XI_USER $PPWD
 chmod -R g=u $PPWD 2>/dev/null
 echo "$SYSTEMD_xi" > /etc/systemd/system/xi.service
 echo "$SYSTEMD_GAME" > /etc/systemd/system/xi_map.service
-echo "$SYSTEMD_CONNECT" > /etc/systemd/system/xi_connect.service
 echo "$SYSTEMD_SEARCH" > /etc/systemd/system/xi_search.service
-echo "$SYSTEMD_PROFILE" > /etc/systemd/system/xi_profile.service
 echo "$SYSTEMD_WORLD" > /etc/systemd/system/xi_world.service
 chmod 755 /etc/systemd/system/xi*
 systemctl daemon-reload
-systemctl enable xi_map xi_connect xi_search xi_profile xi_world
+systemctl enable xi_map xi_search xi_world
 echo "Services installed!"
 echo "Start with 'systemctl start xi', enable start on boot with 'systemctl enable xi'."

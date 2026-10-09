@@ -170,24 +170,13 @@ def main():
 
     # --ci flag only on non-Linux systems. Option exits server as soon as it starts, Linux wants to keep it open to test HXIClient.
     runCI = platform.system() != "Linux"
-    runHXIClient = platform.system() == "Linux"
+    # HXIClient logs in through xi_connect, which is no longer built or launched.
+    runHXIClient = False
 
     # Start the processes
     processes = [
         subprocess.Popen(
-            [from_server_path("xi_connect")],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-        ),
-        subprocess.Popen(
             [from_server_path("xi_search")],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-        ),
-        subprocess.Popen(
-            [from_server_path("xi_profile")],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
@@ -224,7 +213,7 @@ def main():
                 )
                 db.commit()
                 processes.insert(
-                    4,
+                    2,
                     subprocess.Popen(
                         [
                             from_server_path("xi_map"),
