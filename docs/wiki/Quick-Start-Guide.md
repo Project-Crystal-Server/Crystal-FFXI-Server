@@ -482,7 +482,9 @@ python3 ./tools/dbtool.py
 
 Windows: `py -3 ./tools/dbtool.py`
 
-2. Choose `l. Launch Server`. This starts `xi_connect`, `xi_search`, `xi_profile` and `xi_world`, then starts one `xi_map` for each distinct zone port you have configured (default 1).
+2. Choose `l. Launch Server`. This starts `xi_search` and `xi_world`, then starts one `xi_map` for each distinct zone port you have configured (default 1).
+
+3. To stop them again, choose `x. Shutdown Server`.
 
 **By hand:**
 
