@@ -122,26 +122,6 @@ services:
       database:
         condition: service_healthy
 
-  connect:
-    <<: *common
-    command: ["/server/xi_connect"]
-    restart: unless-stopped
-    environment:
-      <<: *dbcreds
-      XI_NETWORK_SQL_HOST: database
-      XI_NETWORK_SQL_PORT: 3306
-      XI_NETWORK_ZMQ_IP: world
-    ports:
-      - "54001:54001"
-      - "54230:54230"
-      - "54231:54231"
-    volumes:
-      - ${LOCAL_WORKSPACE_FOLDER:-./}/log:/server/log
-    depends_on:
-      database:
-        condition: service_healthy
-        restart: true
-
   search:
     <<: *common
     command: ["/server/xi_search"]
@@ -152,24 +132,6 @@ services:
       XI_NETWORK_SQL_PORT: 3306
     ports:
       - "54002:54002"
-    volumes:
-      - ${LOCAL_WORKSPACE_FOLDER:-./}/log:/server/log
-    depends_on:
-      database:
-        condition: service_healthy
-        restart: true
-
-  profile:
-    <<: *common
-    command: ["/server/xi_profile"]
-    restart: unless-stopped
-    environment:
-      <<: *dbcreds
-      XI_NETWORK_SQL_HOST: database
-      XI_NETWORK_SQL_PORT: 3306
-    ports:
-      - "51220:51220"
-      - "51240:51240"
     volumes:
       - ${LOCAL_WORKSPACE_FOLDER:-./}/log:/server/log
     depends_on:
@@ -215,8 +177,6 @@ services:
         condition: service_healthy
         restart: true
       world:
-        condition: service_started
-      connect:
         condition: service_started
       search:
         condition: service_started

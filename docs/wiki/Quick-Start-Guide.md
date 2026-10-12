@@ -470,7 +470,7 @@ We maintain Dockerfiles in the server repo under `docker/`, and our CI builds th
 
 ## Starting the server
 
-The server is four separate processes. You can start them with `dbtool`, or by hand.
+The server is three separate processes. You can start them with `dbtool`, or by hand.
 
 **With dbtool (easiest):**
 
@@ -490,10 +490,8 @@ Windows: `py -3 ./tools/dbtool.py`
 
 Launch the newly-built `xi_*` executables from your repo root:
 
-* `xi_connect`
 * `xi_world`
 * `xi_search`
-* `xi_profile`
 * `xi_map`
 
 On Windows these have an `.exe` extension. Each one opens its own console window; leave them all running. Start `xi_map` last, after the others are up.

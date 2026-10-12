@@ -9,9 +9,7 @@
             "preLaunchTask": "CMake Build",
             "configurations": [
                 "(Windows) xi_map",
-                "(Windows) xi_connect",
                 "(Windows) xi_search",
-                "(Windows) xi_profile",
                 "(Windows) xi_world",
             ],
         }
