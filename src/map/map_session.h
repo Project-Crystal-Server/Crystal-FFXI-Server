@@ -36,6 +36,15 @@ enum class GP_GAME_LOGOUT_STATE : uint8_t;
 class CCharEntity;
 class Scheduler;
 
+// 16-bit serial-number comparison: true if `a` is strictly newer than `b`.
+// This is the rule the client applies to the server's datagram sequence numbers (a datagram whose
+// seq is not newer than the last one it accepted is dropped), so the server has to follow the same one.
+inline auto seqNewer(const uint16 a, const uint16 b) -> bool
+{
+    const uint16 diff = static_cast<uint16>(a - b);
+    return diff != 0 && diff < 0x8000;
+}
+
 struct MapSession
 {
     // Out-of-line so ~unique_ptr<CCharEntity> is instantiated where CCharEntity is complete

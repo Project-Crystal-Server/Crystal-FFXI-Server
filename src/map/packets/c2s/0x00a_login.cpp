@@ -54,7 +54,10 @@ void GP_CLI_COMMAND_LOGIN::process(MapSession* PSession, CCharEntity* PChar) con
     //
     // Handle out of sync zone correction..
     //
-    if (header.sync > 1)
+    // Only ever move the counter forward. A late or duplicated 0x00A carries an older sync than packets we
+    // already sent; rewinding to it would make the client (which drops anything not newer than what it
+    // accepted) discard everything we send from then on.
+    if (header.sync > 1 && seqNewer(header.sync, PSession->server_packet_id))
     {
         PSession->server_packet_id = header.sync;
 
@@ -63,6 +66,12 @@ void GP_CLI_COMMAND_LOGIN::process(MapSession* PSession, CCharEntity* PChar) con
         // If we do not do this, all further packets may be ignored by the client and will result in disconnection from the server.
         PChar->clearPacketList();
     }
+    else if (header.sync > 1)
+    {
+        ShowDebugFmt("GP_CLI_COMMAND_LOGIN: {}: sync {} is not newer than server packet {}, not rewinding", PChar->getName(), header.sync, PSession->server_packet_id);
+    }
+
+    bool enteredZone = false;
 
     // No real distinction between these two states in the 0x00A handler --
     // Key is already assumed to be incremented correctly,
@@ -105,6 +114,8 @@ void GP_CLI_COMMAND_LOGIN::process(MapSession* PSession, CCharEntity* PChar) con
             ShowErrorFmt("GP_CLI_COMMAND_LOGIN: {} was not placed in zone {}", PChar->getName(), destination);
             return;
         }
+
+        enteredZone = true;
 
         luautils::OnZoneIn(PChar);
         luautils::OnGameIn(PChar, PChar->arrivedByZoning);
@@ -151,6 +162,12 @@ void GP_CLI_COMMAND_LOGIN::process(MapSession* PSession, CCharEntity* PChar) con
             }
         }
         PChar->status = xi::Status::Normal;
-        PChar->PAI->QueueAction(queueAction_t(4000ms, false, zoneutils::AfterZoneIn));
+
+        // The client repeats its 0x00A until a reply arrives; the login packets above are re-sent for every
+        // copy (the earlier reply may have been lost) but the zone-in follow-up must only run once.
+        if (enteredZone)
+        {
+            PChar->PAI->QueueAction(queueAction_t(4000ms, false, zoneutils::AfterZoneIn));
+        }
     }
 }

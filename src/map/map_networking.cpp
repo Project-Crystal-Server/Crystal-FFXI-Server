@@ -256,6 +256,7 @@ int32 MapNetworking::recv_parse(uint8* buff, size_t* buffsize, MapSession* PSess
         // Failed checksum
         if (checksum != loginPacket.LoginPacketCheck)
         {
+            ShowWarningFmt("recv_parse: 0x00A from {} dropped, bad login checksum (got {:#04x}, expected {:#04x})", ipp.toString(), loginPacket.LoginPacketCheck, checksum);
             return -1;
         }
 
@@ -306,11 +307,14 @@ int32 MapNetworking::recv_parse(uint8* buff, size_t* buffsize, MapSession* PSess
 
         if (PSession->charID != 0 && PSession->charID != packetCharID)
         {
+            ShowWarningFmt("recv_parse: 0x00A for charid {} from {} dropped, that address belongs to charid {}", packetCharID, ipp.toString(), PSession->charID);
             return -1;
         }
 
         if (PSession->blowfish.status == BLOWFISH_ACCEPTED && PSession->hasDecryptedPacket)
         {
+            // Expected for late copies once the client has moved on to encrypted datagrams
+            ShowDebugFmt("recv_parse: late 0x00A for charid {} from {} ignored, session is already running", packetCharID, ipp.toString());
             return -1;
         }
 
@@ -410,10 +414,28 @@ int32 MapNetworking::recv_parse(uint8* buff, size_t* buffsize, MapSession* PSess
             }
         }
 
-        PSession->client_packet_id = 0;
-        PSession->server_packet_id = 0;
-        PSession->zone_ipp         = {};
-        PSession->zone_type        = GP_GAME_LOGOUT_STATE::NONE;
+        // The client sends an unencrypted 0x00A in every datagram until our reply gets through, so several
+        // can be in flight and they can arrive duplicated or out of order. Only the first one starts the
+        // sequence: resetting on a late copy would move server_packet_id behind what the client has already
+        // accepted, and the client drops every datagram that is not newer than that (it never recovers).
+        if (PSession->blowfish.status == BLOWFISH_WAITING || PSession->blowfish.status == BLOWFISH_PENDING_ZONE)
+        {
+            ShowInfoFmt("recv_parse: charid {} from {}: 0x00A starts the sequence (retry {})", packetCharID, ipp.toString(), loginPacket.unknown00);
+
+            PSession->client_packet_id = 0;
+            PSession->server_packet_id = 0;
+            PSession->zone_ipp         = {};
+            PSession->zone_type        = GP_GAME_LOGOUT_STATE::NONE;
+        }
+        else
+        {
+            ShowDebugFmt("recv_parse: charid {} from {}: repeated 0x00A (retry {}), keeping sequence (server {}, client {})",
+                         packetCharID, ipp.toString(), loginPacket.unknown00, PSession->server_packet_id, PSession->client_packet_id);
+        }
+
+        // On the PS2 client these two words are its login stage and receive-error history (gcZoneRecvError);
+        // on other clients they are the port/IP it reports. Debug level so it is there when needed.
+        ShowDebugFmt("recv_parse: charid {} from {}: 0x00A words unknown00 {:#06x}, unknown01 {:#010x}", packetCharID, ipp.toString(), loginPacket.unknown00, loginPacket.unknown01);
 
         return 0;
     }
@@ -507,7 +529,9 @@ int32 MapNetworking::parse(uint8* buff, size_t* buffsize, MapSession* PSession)
         SmallPD_Size = (ref<uint8>(SmallPD_ptr, 1) & 0x0FE);
         SmallPD_Type = (ref<uint16>(SmallPD_ptr, 0) & 0x1FF);
 
-        if ((ref<uint16>(SmallPD_ptr, 2) <= PSession->client_packet_id) || (ref<uint16>(SmallPD_ptr, 2) > SmallPD_Code))
+        // Only packets newer than the last datagram we handled, and not newer than this datagram, count
+        // (16-bit serial comparison, so it keeps working across the 65535 -> 0 wrap)
+        if (!seqNewer(ref<uint16>(SmallPD_ptr, 2), PSession->client_packet_id) || seqNewer(ref<uint16>(SmallPD_ptr, 2), SmallPD_Code))
         {
             continue;
         }
@@ -567,7 +591,22 @@ int32 MapNetworking::parse(uint8* buff, size_t* buffsize, MapSession* PSession)
         PChar->flushEquipChanges();
     }
 
-    PSession->client_packet_id = SmallPD_Code;
+    // Never move this backwards: a reordered older datagram must not lower what we acknowledge
+    if (seqNewer(SmallPD_Code, PSession->client_packet_id))
+    {
+        PSession->client_packet_id = SmallPD_Code;
+    }
+
+    // The client acknowledges the last server datagram it accepted. It only accepts datagrams newer than
+    // that, so an ack ahead of our own counter means we fell behind (a rewound counter, a late 0x00A...).
+    // Resending the cached datagram would be dropped by the client forever, so catch up instead; the
+    // normal path below then sends a fresh datagram numbered ack + 1.
+    const uint16 clientAck = ref<uint16>(buff, 2);
+    if (seqNewer(clientAck, PSession->server_packet_id))
+    {
+        ShowWarningFmt("parse: charid {}: client acked server packet {} but the server is only at {}; resyncing", PSession->charID, clientAck, PSession->server_packet_id);
+        PSession->server_packet_id = clientAck;
+    }
 
     // Google Translate:
     // here we check if the client received the previous package
@@ -588,7 +627,7 @@ int32 MapNetworking::parse(uint8* buff, size_t* buffsize, MapSession* PSession)
         }
 
         ref<uint16>(PSession->server_packet_data.data(), 2) = SmallPD_Code;
-        ref<uint16>(PSession->server_packet_data.data(), 8) = earth_time::timestamp();
+        ref<uint32>(PSession->server_packet_data.data(), 8) = earth_time::timestamp(); // same width preparePacket writes
 
         PBuff     = PSession->server_packet_data;
         *buffsize = PSession->server_packet_size;
@@ -664,6 +703,9 @@ int32 MapNetworking::send_parse(uint8* buff, size_t* buffsize, MapSession* PSess
                     PSession->zone_type = IPPacket->zoneType();
 
                     incrementKeyAfterEncrypt = true;
+
+                    ShowInfoFmt("send_parse: charid {}: 0x00B state {} to {} in datagram {} (client acked {})",
+                                PSession->charID, static_cast<uint32>(PSession->zone_type), PSession->zone_ipp.toString(), PSession->server_packet_id, PSession->client_packet_id);
 
                     if (PSession->zone_type != GP_GAME_LOGOUT_STATE::LOGOUT)
                     {
