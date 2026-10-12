@@ -27,7 +27,13 @@
 
 #include "console_groups.h"
 
+#include "ability.h"
+#include "entities/char_entity.h"
 #include "map_session.h"
+#include "packets/s2c/0x062_clistatus2.h"
+#include "recast_container.h"
+
+#include <algorithm>
 
 namespace console
 {
@@ -288,6 +294,85 @@ auto s2c069ChocoboRacing(MapSession*, CBasicPacket& packet) -> Result
     return Result::Pass;
 }
 
+// 0x062 CLISTATUS2: handler Recv_clistatus2 0x2F69C0 copies CommandRecast (+0x04, 31 x u32) into the
+// recast table at 0x716680 (0x497260). Each u32 is today's 0x119 timer entry cut to 4 bytes: u16 seconds
+// left, u8 charge reduction (& 0x3F, in 1/60ths of the base charge time), u8 recast id. The ability menu
+// (0x496F30) finds an ability's slot by the recast id in the top byte; slot 0 is the 2-hour (id 0).
+// LSB leaves CommandRecast zero and sends the timers in 0x119, which this client has no handler for.
+void writeRecasts(CCharEntity* PChar, CBasicPacket& packet)
+{
+    constexpr std::size_t kSlots = 31;
+
+    std::memset(packet[0x04], 0, kSlots * 4);
+
+    std::size_t slot = 1;
+    for (const auto& recast : *PChar->PRecastContainer->GetRecastList(RECAST_ABILITY))
+    {
+        if (recast.ID == Recast::Mount)
+        {
+            continue;
+        }
+
+        const auto remaining = recast.RecastTime == 0s ? 0s : std::chrono::ceil<std::chrono::seconds>(recast.TimeStamp - timer::now() + recast.RecastTime);
+        const auto seconds   = static_cast<uint32>(std::clamp<int64>(timer::count_seconds(remaining), 0, 0xFFFF));
+
+        if (recast.ID == Recast::Special)
+        {
+            packet.ref<uint32>(0x04) = seconds;
+            continue;
+        }
+
+        uint32 reduction = 0;
+        if (recast.maxCharges != 0)
+        {
+            if (const auto* charge = ability::GetCharge(PChar, static_cast<uint16>(recast.ID)))
+            {
+                const auto base   = timer::count_seconds(charge->chargeTime);
+                const auto actual = timer::count_seconds(recast.chargeTime);
+                if (base > actual)
+                {
+                    reduction = static_cast<uint32>(std::min<int64>((60 * (base - actual) + base / 2) / base, 0x3F));
+                }
+            }
+        }
+
+        if (slot >= kSlots)
+        {
+            break;
+        }
+        packet.ref<uint32>(0x04 + 4 * slot++) = seconds | reduction << 16 | (static_cast<uint32>(recast.ID) & 0xFF) << 24;
+    }
+}
+
+auto s2c062CliStatus2(MapSession* PSession, CBasicPacket& packet) -> Result
+{
+    if (auto* PChar = PSession->PChar.get())
+    {
+        writeRecasts(PChar, packet);
+        return Result::Rewritten;
+    }
+
+    return Result::Pass;
+}
+
+// 0x119 ABIL_RECAST: no handler (ids >= 0x110 crash this client). Sent as a full 0x062 instead, the only
+// packet this client takes ability recasts from; the skills ride along unchanged.
+auto s2c119AbilRecast(MapSession* PSession, CBasicPacket& packet) -> Result
+{
+    auto* PChar = PSession->PChar.get();
+    if (PChar == nullptr)
+    {
+        return Result::Drop;
+    }
+
+    GP_SERV_COMMAND_CLISTATUS2 status(PChar);
+    std::memcpy(packet[0x04], status[0x04], status.getSize() - 0x04);
+    packet.setType(0x062);
+    packet.setSize(status.getSize());
+    writeRecasts(PChar, packet);
+    return Result::Rewritten;
+}
+
 // 0x071 INFLUENCE: handler Recv_influence_colonization 0x2F6D60 only handles Mode (+0x04) 2 (campaign),
 // in the LSB layout. Colonization (mode 3, Adoulin) is dropped.
 auto s2c071Influence(MapSession*, CBasicPacket& packet) -> Result
@@ -323,6 +408,7 @@ void registerS2C_40(compat::Profile& p)
     p.s2c(0x05A, s2c05AMotionMes);
     p.s2c(0x05B, s2cWpos);
     p.s2c(0x061, s2c061CliStatus);
+    p.s2c(0x062, s2c062CliStatus2);
     p.s2c(0x063, s2c063MiscData);
     p.s2c(0x065, s2cWpos);
     p.s2c(0x067, s2c067);
@@ -330,6 +416,7 @@ void registerS2C_40(compat::Profile& p)
     p.s2c(0x069, s2c069ChocoboRacing);
     p.s2c(0x071, s2c071Influence);
     p.s2c(0x074, s2c074ChocoboList);
+    p.s2c(0x119, s2c119AbilRecast);
 }
 
 } // namespace console
