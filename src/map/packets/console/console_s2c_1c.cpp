@@ -419,6 +419,7 @@ auto eventGuard(MapSession* PSession, CBasicPacket& packet) -> Result
     {
         if (const auto old = ids::homePointEvent(zone))
         {
+            ShowInfoFmt("console: Home Point event {} -> {} in zone {}", event, *old, zone);
             packet.ref<uint16>(kEventNumOffset + 2) = *old;
             return Result::Rewritten;
         }
