@@ -1,7 +1,7 @@
 /*
 ===========================================================================
 
-  Copyright (c) 2026 LandSandBoat Dev Teams
+  Copyright (c) 2026 Project Crystal Dev Team
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -26,8 +26,8 @@
 namespace console
 {
 
-// Remaps every static-entity field of one packet (table in console_entities.cpp): today -> 2010 for
-// outgoing packets, after the layout translator; 2010 -> today for incoming ones, after it.
+// Remap the static entity ids in one packet.
+// S2C maps today's ids to the 2010 client's. C2S maps the 2010 client's ids back to today's.
 auto remapEntitiesS2C(MapSession* PSession, CBasicPacket& packet) -> Result;
 auto remapEntitiesC2S(MapSession* PSession, CBasicPacket& packet) -> Result;
 

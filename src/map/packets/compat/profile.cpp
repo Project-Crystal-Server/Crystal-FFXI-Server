@@ -1,7 +1,7 @@
 /*
 ===========================================================================
 
-  Copyright (c) 2026 LandSandBoat Dev Teams
+  Copyright (c) 2026 Project Crystal Dev Team
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -45,8 +45,6 @@ auto buildProfiles() -> std::vector<std::unique_ptr<Profile>>
 {
     std::vector<std::unique_ptr<Profile>> out;
     out.push_back(console::makeProfile20100904());
-    out.push_back(console::makeProfile20160203(Platform::PS2));
-    out.push_back(console::makeProfile20160203(Platform::Xbox360));
 
     // res/compat/<profile>/versions.txt: the 0x00A Ver values of that build, one per line (hex with 0x, or
     // decimal; # starts a comment). The login logs every client's Ver, so a new build is pinned without a
@@ -57,7 +55,11 @@ auto buildProfiles() -> std::vector<std::unique_ptr<Profile>>
         std::string   line;
         while (std::getline(f, line))
         {
-            line = line.substr(0, line.find('#'));
+            if (const auto hash = line.find('#'); hash != std::string::npos)
+            {
+                line.resize(hash);
+            }
+
             const auto b = line.find_first_not_of(" \t\r");
             if (b == std::string::npos)
             {
@@ -65,9 +67,9 @@ auto buildProfiles() -> std::vector<std::unique_ptr<Profile>>
             }
             auto       entry = line.substr(b);
             const auto e     = entry.find_last_not_of(" \t\r");
-            entry            = entry.substr(0, e + 1);
+            entry.resize(e + 1);
 
-            // a whole number (0x... or decimal) is a Ver; anything else ("20160203_0") a lobby version string
+            // a whole number (0x... or decimal) is a Ver; anything else ("20100904_2") a lobby version string
             size_t used = 0;
             try
             {
@@ -109,7 +111,9 @@ struct ActiveScope
     }
 
     ActiveScope(const ActiveScope&)                    = delete;
+    ActiveScope(ActiveScope&&)                         = delete;
     auto operator=(const ActiveScope&) -> ActiveScope& = delete;
+    auto operator=(ActiveScope&&) -> ActiveScope&      = delete;
 };
 
 // send_parse runs on the map's network thread; translators and the send loop share it.
@@ -117,7 +121,8 @@ thread_local std::vector<std::vector<uint8>> tEmitted;
 
 auto resultName(const Result r) -> const char*
 {
-    return r == Result::Drop ? "drop" : r == Result::Rewritten ? "rewritten" : "pass";
+    return r == Result::Drop ? "drop" : r == Result::Rewritten ? "rewritten"
+                                                               : "pass";
 }
 
 } // namespace
@@ -174,16 +179,6 @@ void Profile::s2cPass(const Translator fn)
 void Profile::c2sPass(const Translator fn)
 {
     c2sPasses_.push_back(fn);
-}
-
-auto Profile::s2cTranslator(const uint16 id) const -> Translator
-{
-    return s2c_[id & 0x1FF];
-}
-
-auto Profile::c2sTranslator(const uint16 id) const -> Translator
-{
-    return c2s_[id & 0x1FF];
 }
 
 auto Profile::clientHandles(const uint16 id) const -> bool
@@ -327,8 +322,7 @@ auto translateS2C(MapSession* PSession, CBasicPacket& packet) -> Result
     const auto  result = profile->translateS2C(PSession, packet);
     if (tracing())
     {
-        ShowInfoFmt("{} trace: s2c {:03X} size {:03X} seq {} -> {} {:03X} size {:03X}", profile->name(), id, size, packet.getSequence(),
-                    resultName(result), packet.getType(), result == Result::Drop ? 0 : packet.getSize());
+        ShowInfoFmt("{} trace: s2c {:03X} size {:03X} seq {} -> {} {:03X} size {:03X}", profile->name(), id, size, packet.getSequence(), resultName(result), packet.getType(), result == Result::Drop ? 0 : packet.getSize());
     }
     return result;
 }

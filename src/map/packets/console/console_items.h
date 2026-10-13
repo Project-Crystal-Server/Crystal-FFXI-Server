@@ -1,7 +1,7 @@
 /*
 ===========================================================================
 
-  Copyright (c) 2026 LandSandBoat Dev Teams
+  Copyright (c) 2026 Project Crystal Dev Team
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -26,8 +26,8 @@
 namespace console
 {
 
-// Keeps items the 2010 install does not have (ids::hasItem) away from the PS2 client, which would
-// show them as "." placeholders. Runs on the 2010 layout, after the s2c translators (console_items.cpp).
+// Keeps items the client's install doesn't have out of one server packet.
+// The client would show them as "." placeholders. Runs after the translators, on the 2010 layout.
 auto filterItemsS2C(MapSession* PSession, CBasicPacket& packet) -> Result;
 
 } // namespace console

@@ -1,7 +1,7 @@
 /*
 ===========================================================================
 
-  Copyright (c) 2026 LandSandBoat Dev Teams
+  Copyright (c) 2026 Project Crystal Dev Team
 
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -29,19 +29,22 @@ namespace console::ids
 namespace
 {
 
+// The id maps of the profile currently being translated for.
 auto maps() -> const compat::IdMaps&
 {
     return compat::active().maps();
 }
 
-// 2010 Home Point event per zone (event file 5820 + zone), on today's Home Point #1.
+// Homepoints were changed December 2013. The Home Point event for each zone before that.
+// It runs on today's Home Point #1.
+// The events are in event file 5820 + zone.
 struct HomePoint
 {
     uint16 zone;
     uint16 event;
 };
 
-constexpr HomePoint kHomePoints2010[] = {
+constexpr HomePoint kClassicHomePoints[] = {
     { 26, 250 },    // Tavnazian Safehold
     { 48, 2 },      // Al Zahbi
     { 50, 501 },    // Aht Urhgan Whitegate
@@ -97,7 +100,7 @@ auto homePointEvent(const uint16 zoneId) -> std::optional<uint16>
         return std::nullopt;
     }
 
-    for (const auto& hp : kHomePoints2010)
+    for (const auto& hp : kClassicHomePoints)
     {
         if (hp.zone == zoneId && maps().hasEvent(zoneId, hp.event))
         {
