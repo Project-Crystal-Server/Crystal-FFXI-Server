@@ -67,7 +67,7 @@ auto clampChocoboIndex(const uint8 flags) -> uint8
     return flags;
 }
 
-// 0x00A - LOGIN
+// 0x00A - GP_SERV_LOGIN
 // Same layout as today. Only values the 2010 client can't show are fixed.
 auto login(MapSession* /* PSession */, CBasicPacket& packet) -> Result
 {
@@ -101,7 +101,7 @@ auto login(MapSession* /* PSession */, CBasicPacket& packet) -> Result
     return Result::Rewritten;
 }
 
-// 0x00D - CHAR_PC
+// 0x00D - GP_SERV_CHAR_PC
 // The 2010 client has no Monstrosity, Geomancy, hitbox or flags6 fields.
 // The model and name are moved 10 bytes earlier to close the gap.
 auto charPc(MapSession* /* PSession */, CBasicPacket& packet) -> Result
@@ -145,7 +145,7 @@ auto charPc(MapSession* /* PSession */, CBasicPacket& packet) -> Result
     return Result::Rewritten;
 }
 
-// 0x00E - CHAR_NPC
+// 0x00E - GP_SERV_CHAR_NPC
 // Bounds check the entity list for the 2010 client. NPCs must sit at 0x000-0x3FF or 0x700-0x7FF.
 auto charNpc(MapSession* /* PSession */, CBasicPacket& packet) -> Result
 {
@@ -158,8 +158,8 @@ auto charNpc(MapSession* /* PSession */, CBasicPacket& packet) -> Result
     return Result::Drop;
 }
 
-// 0x012 - GM
-// 0x013 - GMCOMMAND
+// 0x012 - GP_SERV_GM
+// 0x013 - GP_SERV_COMMAND_GMCOMMAND
 // The 2010 client copies these into a 160-byte buffer, so anything over 0xA4 bytes overflows it.
 // The server doesn't send them today. This caps them in case it starts.
 auto gm(MapSession* /* PSession */, CBasicPacket& packet) -> Result
@@ -207,7 +207,7 @@ auto chatKind(const uint8 kind) -> uint8
     }
 }
 
-// 0x017 - CHAT_STD
+// 0x017 - GP_SERV_CHAT_STD
 // The 2010 client has a shorter header: GM flag, name, then chat type, with no zone or assist data.
 auto chatStd(MapSession* /* PSession */, CBasicPacket& packet) -> Result
 {

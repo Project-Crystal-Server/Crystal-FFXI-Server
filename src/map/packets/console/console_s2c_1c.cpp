@@ -60,7 +60,7 @@ auto itemSlotValid(const uint8 container, const uint8 slot) -> bool
     return container < kContainers && slot < kSlots;
 }
 
-// 0x01C - ITEM_MAX
+// 0x01C - GP_SERV_COMMAND_ITEM_MAX
 // The 2010 client has 6 containers instead of 18, and no more than 81 slots in each.
 auto itemMax(MapSession* /* PSession */, CBasicPacket& packet) -> Result
 {
@@ -76,63 +76,63 @@ auto itemMax(MapSession* /* PSession */, CBasicPacket& packet) -> Result
     return Result::Rewritten;
 }
 
-// 0x01E - ITEM_NUM
+// 0x01E - GP_SERV_ITEM_NUM
 // Bounds check the container and slot for the 2010 client.
 auto itemNum(MapSession* /* PSession */, CBasicPacket& packet) -> Result
 {
     return itemSlotValid(packet.ref<uint8>(0x08), packet.ref<uint8>(0x09)) ? Result::Pass : Result::Drop;
 }
 
-// 0x01F - ITEM_LIST
+// 0x01F - GP_SERV_ITEM_LIST
 // Bounds check the container and slot for the 2010 client.
 auto itemList(MapSession* /* PSession */, CBasicPacket& packet) -> Result
 {
     return itemSlotValid(packet.ref<uint8>(0x0A), packet.ref<uint8>(0x0B)) ? Result::Pass : Result::Drop;
 }
 
-// 0x020 - ITEM_ATTR
+// 0x020 - GP_SERV_ITEM_ATTR
 // Bounds check the container and slot for the 2010 client.
 auto itemAttr(MapSession* /* PSession */, CBasicPacket& packet) -> Result
 {
     return itemSlotValid(packet.ref<uint8>(0x0E), packet.ref<uint8>(0x0F)) ? Result::Pass : Result::Drop;
 }
 
-// 0x021 - ITEM_TRADE_REQ
+// 0x021 - GP_SERV_ITEM_TRADE_REQ
 // Bounds check the entity list for the 2010 client.
 auto itemTradeReq(MapSession* /* PSession */, CBasicPacket& packet) -> Result
 {
     return packet.ref<uint16>(0x08) < kEntityCount ? Result::Pass : Result::Drop;
 }
 
-// 0x022 - ITEM_TRADE_RES
+// 0x022 - GP_SERV_ITEM_TRADE_RES
 // Bounds check the entity list for the 2010 client.
 auto itemTradeRes(MapSession* /* PSession */, CBasicPacket& packet) -> Result
 {
     return packet.ref<uint16>(0x0C) < kEntityCount ? Result::Pass : Result::Drop;
 }
 
-// 0x023 - ITEM_TRADE_LIST
+// 0x023 - GP_SERV_ITEM_TRADE_LIST
 // Bounds check the trade slot for the 2010 client.
 auto itemTradeList(MapSession* /* PSession */, CBasicPacket& packet) -> Result
 {
     return packet.ref<uint8>(0x0D) < kTradeSlots ? Result::Pass : Result::Drop;
 }
 
-// 0x025 - ITEM_TRADE_MYLIST
+// 0x025 - GP_SERV_ITEM_TRADE_MYLIST
 // Bounds check the trade slot for the 2010 client.
 auto itemTradeMyList(MapSession* /* PSession */, CBasicPacket& packet) -> Result
 {
     return packet.ref<uint8>(0x0A) < kTradeSlots ? Result::Pass : Result::Drop;
 }
 
-// 0x026 - ITEM_SUBCONTAINER
+// 0x026 - GP_SERV_COMMAND_ITEM_UPDATE_ITEMBOX
 // Mannequins don't exist on the 2010 client. It uses this id for a different item box packet.
 auto itemSubcontainer(MapSession* /* PSession */, CBasicPacket& /* packet */) -> Result
 {
     return Result::Drop;
 }
 
-// 0x029 - BATTLE_MESSAGE
+// 0x029 - GP_SERV_BATTLE_MESSAGE
 // Bounds check the message number for the 2010 client.
 auto battleMessage(MapSession* /* PSession */, CBasicPacket& packet) -> Result
 {
@@ -203,7 +203,7 @@ constexpr auto fits(const uint32 v, const uint8 bits) -> bool
     return v < (1u << bits);
 }
 
-// 0x028 - BATTLE2
+// 0x028 - GP_SERV_BATTLE2
 // Some result fields are narrower on the 2010 client, so the bit stream is repacked.
 // Values too big for the 2010 field are capped, or cleared where a capped value would be wrong.
 //
@@ -322,7 +322,7 @@ auto battle2(MapSession* /* PSession */, CBasicPacket& packet) -> Result
     return Result::Rewritten;
 }
 
-// 0x037 - SERVERSTATUS
+// 0x037 - GP_SERV_SERVERSTATUS
 // The 2010 client has 1 high bit per status icon instead of 2, and nothing after it.
 // Effects that need the second bit don't exist on the 2010 client, so their icons are cleared.
 auto serverStatus(MapSession* /* PSession */, CBasicPacket& packet) -> Result
@@ -353,7 +353,7 @@ auto serverStatus(MapSession* /* PSession */, CBasicPacket& packet) -> Result
     return Result::Rewritten;
 }
 
-// 0x03C - SHOP_LIST
+// 0x03C - GP_SERV_SHOP_LIST
 // The 2010 client's shop entries are 8 bytes (price, item, shop slot). Today's add skill and guild info.
 // Bounds check the shop slot for the 2010 client.
 auto shopList(MapSession* /* PSession */, CBasicPacket& packet) -> Result
@@ -394,14 +394,14 @@ auto shopList(MapSession* /* PSession */, CBasicPacket& packet) -> Result
     return Result::Rewritten;
 }
 
-// 0x03D - SHOP_SELL
+// 0x03D - GP_SERV_SHOP_SELL
 // Bounds check the inventory slot for the 2010 client.
 auto shopSell(MapSession* /* PSession */, CBasicPacket& packet) -> Result
 {
     return packet.ref<uint8>(0x08) < kSlots ? Result::Pass : Result::Drop;
 }
 
-// 0x03E - SHOP_OPEN
+// 0x03E - GP_SERV_SHOP_OPEN
 // The 2010 client's shop menu has 16 entries. Larger item counts are capped to that.
 auto shopOpen(MapSession* /* PSession */, CBasicPacket& packet) -> Result
 {
@@ -415,16 +415,16 @@ auto shopOpen(MapSession* /* PSession */, CBasicPacket& packet) -> Result
     return Result::Rewritten;
 }
 
-// 0x03F - SHOP_BUY
+// 0x03F - GP_SERV_SHOP_BUY
 // Bounds check the shop slot for the 2010 client.
 auto shopBuy(MapSession* /* PSession */, CBasicPacket& packet) -> Result
 {
     return packet.ref<uint16>(0x04) < kShopSlots ? Result::Pass : Result::Drop;
 }
 
-// 0x032 - EVENT
-// 0x033 - EVENTSTR
-// 0x034 - EVENTNUM
+// 0x032 - GP_SERV_EVENT
+// 0x033 - GP_SERV_EVENTSTR
+// 0x034 - GP_SERV_EVENTNUM
 // The 2010 client can only run events that are in its own zone files. For a newer event it never
 // sends the end, and the player stays locked (Dkhaaya, zone 50). So the event isn't sent: the client
 // gets a 0x052 release instead, and the server closes its side without the finish handler, as if the
@@ -464,8 +464,8 @@ auto eventGuard(MapSession* PSession, CBasicPacket& packet) -> Result
 }
 
 // 0x027 - TALKNUMWORK2
-// 0x02A - TALKNUMWORK
-// 0x036 - TALKNUM
+// 0x02A - GP_SERV_TALKNUMWORK
+// 0x036 - GP_SERV_TALKNUM
 // The message number is a line in the zone's dialog file, and lines have moved since 2010.
 // It's remapped to the 2010 line. A line added after 2010 is dropped rather than shown as the wrong text.
 template <size_t kMesNumOffset>

@@ -87,7 +87,7 @@ auto guildList(MapSession*, CBasicPacket& packet) -> Result
     return Result::Pass;
 }
 
-// 0x08C - MERIT
+// 0x08C - GP_SERV_COMMAND_STRPNT_MERPT_CONF
 // The 2010 client trusts the merit count. It's clamped to the entries that fit in the packet.
 auto merit(MapSession*, CBasicPacket& packet) -> Result
 {
@@ -103,7 +103,7 @@ auto merit(MapSession*, CBasicPacket& packet) -> Result
     return Result::Pass;
 }
 
-// 0x0AA - MAGIC_DATA
+// 0x0AA - GP_SERV_MAGIC_DATA
 // The 2010 client reads spells 0-767. The rest of today's table is newer spells, so it's cut.
 auto magicData(MapSession*, CBasicPacket& packet) -> Result
 {
@@ -111,7 +111,7 @@ auto magicData(MapSession*, CBasicPacket& packet) -> Result
     return Result::Rewritten;
 }
 
-// 0x0AC - COMMAND_DATA
+// 0x0AC - GP_SERV_COMMAND_DATA
 // The 2010 client has one 1024-bit table: job abilities, then pet abilities, then weapon skills.
 // Today's packet has a separate table for each, so they're packed into one. Pet abilities and
 // weapon skills past the first 256 don't fit. Traits are sent as their own FEAT_DATA (0x0AB).
@@ -132,7 +132,7 @@ auto commandData(MapSession*, CBasicPacket& packet) -> Result
     return Result::Rewritten;
 }
 
-// 0x0B4 - CONFIG
+// 0x0B4 - GP_SERV_CONFIG
 // The 2010 client reads a 16-bit field at 0x10 and a byte at 0x12. Today 0x10 is one byte, followed
 // by party languages and padding. Those are cleared so the client doesn't read them as its own fields.
 auto config(MapSession*, CBasicPacket& packet) -> Result
@@ -143,7 +143,7 @@ auto config(MapSession*, CBasicPacket& packet) -> Result
     return Result::Rewritten;
 }
 
-// 0x0C8 - GROUP_TBL
+// 0x0C8 - GP_SERV_GROUP_TBL
 // The 2010 client's member entries are 8 bytes with a one-byte zone. Today's are 12 bytes with a
 // two-byte zone. The client always reads all 20 entries.
 auto groupTbl(MapSession*, CBasicPacket& packet) -> Result
@@ -169,7 +169,7 @@ auto groupTbl(MapSession*, CBasicPacket& packet) -> Result
     return Result::Rewritten;
 }
 
-// 0x0C9 - EQUIP_INSPECT
+// 0x0C9 - GP_SERV_EQUIP_INSPECT
 // Only the general mode (1) has a different layout on the 2010 client. Its fields are moved to where
 // the client reads them. The client has no master level, so those fields are left out.
 auto equipInspect(MapSession*, CBasicPacket& packet) -> Result
@@ -195,7 +195,7 @@ auto equipInspect(MapSession*, CBasicPacket& packet) -> Result
     return Result::Rewritten;
 }
 
-// 0x0CA - INSPECT_MESSAGE
+// 0x0CA - GP_SERV_COMMAND_INSPECT_MESSAGE
 // Bounds check the title for the 2010 client. A title it doesn't have is sent as title 0.
 auto inspectMessage(MapSession*, CBasicPacket& packet) -> Result
 {
@@ -208,7 +208,7 @@ auto inspectMessage(MapSession*, CBasicPacket& packet) -> Result
     return Result::Pass;
 }
 
-// 0x0CC - LINKSHELL_MESSAGE
+// 0x0CC - GP_SERV_COMMAND_LINKSHELL_MESSAGE
 // The 2010 client has one linkshell. Messages for Linkshell 2 are dropped, or it would show them as its own.
 auto linkshellMessage(MapSession*, CBasicPacket& packet) -> Result
 {
@@ -220,7 +220,7 @@ auto linkshellMessage(MapSession*, CBasicPacket& packet) -> Result
     return Result::Pass;
 }
 
-// 0x0D2 - TROPHY_LIST
+// 0x0D2 - GP_SERV_TROPHY_LIST
 // Bounds check the treasure pool slot and the entity list for the 2010 client.
 // A bad lot holder is cleared instead of dropping the whole item.
 auto trophyList(MapSession*, CBasicPacket& packet) -> Result
@@ -240,7 +240,7 @@ auto trophyList(MapSession*, CBasicPacket& packet) -> Result
     return Result::Pass;
 }
 
-// 0x0D3 - TROPHY_SOLUTION
+// 0x0D3 - GP_SERV_TROPHY_SOLUTION
 // Bounds check the treasure pool slot for the 2010 client.
 auto trophySolution(MapSession*, CBasicPacket& packet) -> Result
 {
@@ -252,7 +252,7 @@ auto trophySolution(MapSession*, CBasicPacket& packet) -> Result
     return Result::Pass;
 }
 
-// 0x0DC - GROUP_SOLICIT_REQ
+// 0x0DC - GP_SERV_GROUP_SOLICIT_REQ
 // The group kind is mapped to the 2010 client's numbering. The client prints the inviter's name
 // as a string, so its last byte is zeroed to keep it terminated.
 auto groupSolicitReq(MapSession*, CBasicPacket& packet) -> Result
@@ -268,8 +268,8 @@ auto groupSolicitReq(MapSession*, CBasicPacket& packet) -> Result
     return Result::Rewritten;
 }
 
-// 0x0DD - GROUP_LIST
-// 0x0E2 - GROUP_LIST2
+// 0x0DD - GP_SERV_GROUP_LIST
+// 0x0E2 - GP_SERV_COMMAND_GROUP_LIST2
 // The 2010 client has a one-byte zone and no job fields, so the name sits 8 bytes earlier.
 // It also needs the group kind in its own numbering and TP as a percent.
 auto groupList(MapSession*, CBasicPacket& packet) -> Result
@@ -291,7 +291,7 @@ auto groupList(MapSession*, CBasicPacket& packet) -> Result
     return Result::Rewritten;
 }
 
-// 0x0DF - GROUP_ATTR
+// 0x0DF - GP_SERV_GROUP_ATTR
 // Everything after the zone (monstrosity, jobs) is newer than the 2010 client, so it's cut.
 // It also needs the group kind in its own numbering and TP as a percent.
 auto groupAttr(MapSession*, CBasicPacket& packet) -> Result
@@ -308,7 +308,7 @@ auto groupAttr(MapSession*, CBasicPacket& packet) -> Result
     return Result::Rewritten;
 }
 
-// 0x0E0 - GROUP_COMLINK
+// 0x0E0 - GP_SERV_GROUP_COMLINK
 // The 2010 client has one linkshell. Updates for Linkshell 2 are dropped.
 auto groupComlink(MapSession*, CBasicPacket& packet) -> Result
 {
@@ -327,7 +327,7 @@ auto myroomOperation(MapSession*, CBasicPacket&) -> Result
     return Result::Drop;
 }
 
-// 0x105 - BAZAAR_LIST
+// 0x105 - GP_SERV_COMMAND_BAZAAR_LIST
 // Bounds check the bazaar slot for the 2010 client.
 auto bazaarList(MapSession*, CBasicPacket& packet) -> Result
 {
@@ -339,7 +339,7 @@ auto bazaarList(MapSession*, CBasicPacket& packet) -> Result
     return Result::Pass;
 }
 
-// 0x109 - BAZAAR_SELL
+// 0x109 - GP_SERV_COMMAND_BAZAAR_SELL
 // Bounds check the bazaar slot for the 2010 client.
 auto bazaarSell(MapSession*, CBasicPacket& packet) -> Result
 {

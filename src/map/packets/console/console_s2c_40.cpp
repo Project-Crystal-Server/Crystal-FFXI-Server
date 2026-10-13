@@ -73,7 +73,7 @@ auto extendedJob(MapSession*, CBasicPacket& packet) -> Result
     return Result::Pass;
 }
 
-// 0x04B - PBX_RESULT
+// 0x04B - GP_SERV_PBX_RESULT
 // Bounds check the delivery box slot for the 2010 client.
 auto pbxResult(MapSession*, CBasicPacket& packet) -> Result
 {
@@ -90,7 +90,7 @@ auto pbxResult(MapSession*, CBasicPacket& packet) -> Result
     return Result::Pass;
 }
 
-// 0x050 - EQUIP_LIST
+// 0x050 - GP_SERV_EQUIP_LIST
 // The 2010 client assumes equipped items are in the inventory. Items equipped from a wardrobe
 // are shown as an empty slot, otherwise it would show whatever is in that inventory slot.
 auto equipList(MapSession*, CBasicPacket& packet) -> Result
@@ -110,7 +110,7 @@ auto equipList(MapSession*, CBasicPacket& packet) -> Result
     return Result::Pass;
 }
 
-// 0x051 - GRAP_LIST
+// 0x051 - GP_SERV_GRAP_LIST
 // The 2010 client has no costumes or monstrosity. It would read the costume model as race and face.
 auto grapList(MapSession*, CBasicPacket& packet) -> Result
 {
@@ -122,7 +122,7 @@ auto grapList(MapSession*, CBasicPacket& packet) -> Result
     return Result::Pass;
 }
 
-// 0x055 - SCENARIOITEM
+// 0x055 - GP_SERV_SCENARIOITEM
 // The 2010 client only has the first 4 key item tables. The rest are newer key items.
 auto scenarioItem(MapSession*, CBasicPacket& packet) -> Result
 {
@@ -134,7 +134,7 @@ auto scenarioItem(MapSession*, CBasicPacket& packet) -> Result
     return Result::Pass;
 }
 
-// 0x056 - MISSION
+// 0x056 - GP_SERV_MISSION
 // Mission logs newer than the 2010 client (Adoulin, Coalition, TVR) are dropped.
 auto mission(MapSession*, CBasicPacket& packet) -> Result
 {
@@ -147,7 +147,7 @@ auto mission(MapSession*, CBasicPacket& packet) -> Result
     return Result::Drop;
 }
 
-// 0x05A - MOTIONMES
+// 0x05A - GP_SERV_MOTIONMES
 // Bounds check the emote and the entity list for the 2010 client.
 auto motionMes(MapSession*, CBasicPacket& packet) -> Result
 {
@@ -164,7 +164,7 @@ auto motionMes(MapSession*, CBasicPacket& packet) -> Result
     return Result::Pass;
 }
 
-// 0x05B - WPOS
+// 0x05B - GP_SERV_WPOS
 // 0x065 - WPOS2
 // Bounds check the entity list for the 2010 client.
 auto wpos(MapSession*, CBasicPacket& packet) -> Result
@@ -177,7 +177,7 @@ auto wpos(MapSession*, CBasicPacket& packet) -> Result
     return Result::Pass;
 }
 
-// 0x061 - CLISTATUS
+// 0x061 - GP_SERV_CLISTATUS
 // Everything after the Mog House field (item level, unity, mastery) is newer than the 2010 client.
 auto cliStatus(MapSession*, CBasicPacket& packet) -> Result
 {
@@ -340,7 +340,7 @@ auto influence(MapSession*, CBasicPacket& packet) -> Result
     return packet.ref<uint8>(0x04) == 2 ? Result::Pass : Result::Drop;
 }
 
-// 0x074 - CHOCOBO_LIST
+// 0x074 - GP_SERV_COMMAND_CHCOBORACE_INFO
 // Bounds check the chocobo table for the 2010 client.
 auto chocoboList(MapSession*, CBasicPacket& packet) -> Result
 {
