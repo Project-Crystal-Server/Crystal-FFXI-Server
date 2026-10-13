@@ -54,10 +54,10 @@ auto hasItem(uint16 itemId) -> bool;
 // Event numbers did not shift between versions. Without an event map every event is known.
 auto hasEvent(uint16 zoneId, uint16 eventId) -> bool;
 
-// Today's Home Point #1 event.
+// Modern Home Point event (post Dec 2013). The npc named "Home Point #1".
 constexpr uint16 kHomePointEvent = 8700;
 
-// Returns the zone's 2010 Home Point Yes/No event (result 0 is Yes, 1 is No).
+// Returns the zone's pre-December 2013 Home Point Yes/No event (result 0 is Yes, 1 is No).
 // Returns nullopt if the client has event 8700 or the zone has no Home Point.
 auto homePointEvent(uint16 zoneId) -> std::optional<uint16>;
 

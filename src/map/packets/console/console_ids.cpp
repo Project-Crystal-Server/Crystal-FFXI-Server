@@ -35,7 +35,8 @@ auto maps() -> const compat::IdMaps&
     return compat::active().maps();
 }
 
-// The 2010 Home Point event for each zone. It runs on today's Home Point #1.
+// Homepoints were changed December 2013. The Home Point event for each zone before that.
+// It runs on today's Home Point #1.
 // The events are in event file 5820 + zone.
 struct HomePoint
 {
@@ -43,7 +44,7 @@ struct HomePoint
     uint16 event;
 };
 
-constexpr HomePoint kHomePoints2010[] = {
+constexpr HomePoint kClassicHomePoints[] = {
     { 26, 250 },    // Tavnazian Safehold
     { 48, 2 },      // Al Zahbi
     { 50, 501 },    // Aht Urhgan Whitegate
@@ -99,7 +100,7 @@ auto homePointEvent(const uint16 zoneId) -> std::optional<uint16>
         return std::nullopt;
     }
 
-    for (const auto& hp : kHomePoints2010)
+    for (const auto& hp : kClassicHomePoints)
     {
         if (hp.zone == zoneId && maps().hasEvent(zoneId, hp.event))
         {
