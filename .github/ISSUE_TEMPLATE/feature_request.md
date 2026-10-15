@@ -1,9 +1,10 @@
 ---
-name: 🔨 Feature Request
+name: "\U0001F528 Feature Request"
 about: Feature Request
 title: "\U0001F528 <Replace this with Feature Summary>"
 labels: enhancement
-assignees:
+assignees: ''
+
 ---
 
 <!-- Remove space and place 'x' mark between square [] brackets or click the checkbox after saving to affirm the following points: -->
