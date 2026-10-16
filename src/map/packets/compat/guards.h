@@ -48,6 +48,9 @@ void beforeDispatch(MapSession* PSession, CCharEntity* PChar, CBasicPacket& pack
 // list before it. A Talk that got neither an event nor a release is released.
 void afterDispatch(MapSession* PSession, CCharEntity* PChar, CBasicPacket& packet, size_t queued, bool dropped);
 
+// A client packet failed its size check or validate(). The server sends nothing for those on its own.
+void onRejected(MapSession* PSession, CCharEntity* PChar, CBasicPacket& packet);
+
 // An outgoing packet went through translateS2C. eventId is the event an event packet carried before it was
 // translated. A dropped event packet is rewritten into a release and the server's event is ended; returns
 // true when that happened, so the caller sends the packet after all.

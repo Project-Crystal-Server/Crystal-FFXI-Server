@@ -24,6 +24,8 @@
 #include "common/logging.h"
 #include "common/timer.h"
 
+#include "ai/ai_container.h"
+#include "ai/states/attack_state.h"
 #include "entities/char_entity.h"
 #include "event_info.h"
 #include "map_session.h"
@@ -191,6 +193,50 @@ void afterDispatch(MapSession* PSession, CCharEntity* PChar, CBasicPacket& packe
                    packet.ref<uint16>(0x08),
                    dropped ? "dropped before the server saw it" : "the server sent nothing");
     release(PChar);
+}
+
+void onRejected(MapSession* PSession, CCharEntity* PChar, CBasicPacket& packet)
+{
+    if (!PSession->client.translated())
+    {
+        return;
+    }
+
+    const auto type = packet.getType();
+    if (type == 0x01A && packet.getSize() >= 0x0C)
+    {
+        const auto action = packet.ref<uint16>(0x0A);
+        if (action != 0x02 && action != 0x04 && action != 0x0F) // Attack, AttackOff, ChangeTarget
+        {
+            return;
+        }
+
+        const bool attackAnimation = PChar->animation == xi::Animation::Attack;
+        const bool attackState     = PChar->PAI->IsCurrentState<CAttackState>();
+        ShowWarningFmt("guards: {} sent action {} and it was rejected. Server: animation {}, attack state {}, {}. Sending the real status.",
+                       PChar->getName(),
+                       action,
+                       static_cast<int>(PChar->animation),
+                       attackState ? "running" : "not running",
+                       openWork(PChar));
+
+        // The animation was overwritten (event, /sit, Lua) while the fight went on. AttackOff could never pass.
+        if (action == 0x04 && attackState && !attackAnimation)
+        {
+            PChar->PAI->Disengage();
+        }
+
+        PChar->updatemask |= UPDATE_HP; // a 0x037 with the current status on the next tick
+        return;
+    }
+
+    if ((type == 0x05B && packet.getSize() >= 0x14) || (type == 0x05C && packet.getSize() >= 0x1C))
+    {
+        ShowWarningFmt("guards: {} ended event {} but the server has {}.",
+                       PChar->getName(),
+                       packet.ref<uint16>(type == 0x05B ? 0x12 : 0x1A),
+                       openWork(PChar));
+    }
 }
 
 auto afterTranslateS2C(MapSession* PSession, CBasicPacket& packet, const uint16 type, const uint16 eventId, const bool dropped) -> bool
