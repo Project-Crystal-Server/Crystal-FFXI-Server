@@ -28,6 +28,7 @@
 #include "entities/char_entity.h"
 
 #include "packets/basic.h"
+#include "packets/compat/guards.h"
 #include "packets/compat/profile.h"
 #include "packets/s2c/0x00b_logout.h"
 
@@ -560,13 +561,25 @@ int32 MapNetworking::parse(uint8* buff, size_t* buffsize, MapSession* PSession)
             // We're copying in and bounding only exactly what we want, so it's safe.
             std::memcpy(&parseScratchPacket_.ref<uint8>(0), SmallPD_ptr, PACKET_SIZE);
 
-            if (PSession->client.translated() && compat::translateC2S(PSession, parseScratchPacket_) == compat::Result::Drop)
+            // A console client waits on some requests forever if nothing answers them (packets/compat/guards.h)
+            const bool translated = PSession->client.translated();
+            const bool dropped    = translated && compat::translateC2S(PSession, parseScratchPacket_) == compat::Result::Drop;
+            if (translated)
             {
-                continue;
+                compat::guards::beforeDispatch(PSession, PChar, parseScratchPacket_);
+            }
+            const size_t queued = PChar->getPacketList().size();
+
+            if (!dropped)
+            {
+                ShowTraceFmt("map::parse: Char: {} ({}): {}", PChar->getName(), PChar->id, hex16ToString(parseScratchPacket_.getType()));
+                packetSystem_.dispatch(SmallPD_Type, PSession, PChar, parseScratchPacket_);
             }
 
-            ShowTraceFmt("map::parse: Char: {} ({}): {}", PChar->getName(), PChar->id, hex16ToString(parseScratchPacket_.getType()));
-            packetSystem_.dispatch(SmallPD_Type, PSession, PChar, parseScratchPacket_);
+            if (translated)
+            {
+                compat::guards::afterDispatch(PSession, PChar, parseScratchPacket_, queued, dropped);
+            }
         }
     }
 
