@@ -103,6 +103,7 @@ void MapNetworking::handle_incoming_packet(ByteSpan buffer, const IPP& ipp)
     int32 decryptCount = recv_parse(PBuff.data(), &size, PSession, ipp);
     if (PSession == nullptr)
     {
+        compat::guards::onUnknownAddress(ipp, mapSessions_.getSessionsByIP(ipp.getIP()));
         return;
     }
 

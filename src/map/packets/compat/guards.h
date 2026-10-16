@@ -24,6 +24,7 @@
 #include "common/cbasetypes.h"
 
 #include <cstddef>
+#include <vector>
 
 // Soft-lock guards for console clients (sessions with a translation profile).
 //
@@ -35,6 +36,7 @@
 
 class CBasicPacket;
 class CCharEntity;
+class IPP;
 struct MapSession;
 
 namespace compat::guards
@@ -59,5 +61,8 @@ auto afterTranslateS2C(MapSession* PSession, CBasicPacket& packet, uint16 type, 
 // The server sent the cached datagram again because the client has not acknowledged it, or sent a new one.
 void onResend(MapSession* PSession);
 void onNewDatagram(MapSession* PSession);
+
+// A datagram came from an address with no session. sameIp are the live sessions from that IP.
+void onUnknownAddress(const IPP& ipp, const std::vector<MapSession*>& sameIp);
 
 } // namespace compat::guards

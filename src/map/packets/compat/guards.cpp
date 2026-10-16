@@ -21,6 +21,7 @@
 
 #include "guards.h"
 
+#include "common/ipp.h"
 #include "common/logging.h"
 #include "common/timer.h"
 
@@ -55,6 +56,9 @@ constexpr auto kSequenceTimeout = std::chrono::seconds(30);
 // Log the resend streak at these lengths.
 constexpr uint32 kResendLog[] = { 20, 100, 500 };
 
+// One warning per unknown address per this long.
+constexpr auto kUnknownAddressQuiet = std::chrono::seconds(30);
+
 struct State
 {
     timer::time_point busySince{};     // first seen in an event or sequence after a client packet; zero when idle
@@ -63,8 +67,9 @@ struct State
     timer::time_point resendSince{};
 };
 
-std::mutex                        gMutex;
-std::unordered_map<uint32, State> gStates; // by charid
+std::mutex                                    gMutex;
+std::unordered_map<uint32, State>             gStates;  // by charid
+std::unordered_map<uint64, timer::time_point> gUnknown; // by raw IPP, last warning
 
 auto isTalk(CBasicPacket& packet) -> bool
 {
@@ -325,6 +330,46 @@ void onNewDatagram(MapSession* PSession)
     {
         ShowInfoFmt("guards: {} acknowledged again after {} resends.", PSession->PChar->getName(), streak);
     }
+}
+
+void onUnknownAddress(const IPP& ipp, const std::vector<MapSession*>& sameIp)
+{
+    std::string known;
+    for (const auto* PSession : sameIp)
+    {
+        if (!PSession->client.translated())
+        {
+            continue;
+        }
+        known += fmt::format("{}{} from port {} (last packet {:.0f}s ago)",
+                             known.empty() ? "" : ", ",
+                             PSession->PChar ? PSession->PChar->getName() : fmt::format("charid {}", PSession->charID),
+                             PSession->client_ipp.getPort(),
+                             std::chrono::duration<double>(earth_time::now() - PSession->last_update).count());
+    }
+    if (known.empty())
+    {
+        return;
+    }
+
+    const auto now = timer::now();
+    {
+        std::lock_guard lock(gMutex);
+        auto&           last = gUnknown[ipp.getRawIPP()];
+        if (last != timer::time_point{} && now - last < kUnknownAddressQuiet)
+        {
+            return;
+        }
+        last = now;
+        if (gUnknown.size() > 1024)
+        {
+            gUnknown.clear();
+        }
+    }
+
+    ShowWarningFmt("guards: datagram from {} matches no session, but {} has one from the same IP. A router may have moved the client to a new port; the server ignores it.",
+                   ipp.toString(),
+                   known);
 }
 
 } // namespace compat::guards
