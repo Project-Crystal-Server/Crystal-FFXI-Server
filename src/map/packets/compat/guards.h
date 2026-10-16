@@ -56,4 +56,8 @@ void onRejected(MapSession* PSession, CCharEntity* PChar, CBasicPacket& packet);
 // true when that happened, so the caller sends the packet after all.
 auto afterTranslateS2C(MapSession* PSession, CBasicPacket& packet, uint16 type, uint16 eventId, bool dropped) -> bool;
 
+// The server sent the cached datagram again because the client has not acknowledged it, or sent a new one.
+void onResend(MapSession* PSession);
+void onNewDatagram(MapSession* PSession);
+
 } // namespace compat::guards

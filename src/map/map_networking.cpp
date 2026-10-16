@@ -647,11 +647,13 @@ int32 MapNetworking::parse(uint8* buff, size_t* buffsize, MapSession* PSession)
 
         std::memcpy(PSession->server_packet_data.data(), buff, *buffsize);
 
+        compat::guards::onResend(PSession);
         return -1;
     }
 
     // GT: increase the number of the sent packet only if new data is sent
 
+    compat::guards::onNewDatagram(PSession);
     PSession->server_packet_id += 1;
 
     return 0;

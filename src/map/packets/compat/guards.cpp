@@ -36,6 +36,7 @@
 #include <mutex>
 #include <string>
 #include <unordered_map>
+#include <utility>
 
 namespace compat::guards
 {
@@ -51,10 +52,15 @@ constexpr auto kStaleAfter = std::chrono::seconds(5);
 // A Lua sequence still open after this long, with no event, gets a release.
 constexpr auto kSequenceTimeout = std::chrono::seconds(30);
 
+// Log the resend streak at these lengths.
+constexpr uint32 kResendLog[] = { 20, 100, 500 };
+
 struct State
 {
     timer::time_point busySince{};     // first seen in an event or sequence after a client packet; zero when idle
     timer::time_point lastEventSent{}; // last event packet (0x032-0x034) that left for the client
+    uint32            resendStreak = 0;
+    timer::time_point resendSince{};
 };
 
 std::mutex                        gMutex;
@@ -270,6 +276,55 @@ auto afterTranslateS2C(MapSession* PSession, CBasicPacket& packet, const uint16 
     packet.setSize(0x08);
     packet.ref<uint32>(0x04) = 0; // Standard
     return true;
+}
+
+void onResend(MapSession* PSession)
+{
+    if (!PSession->client.translated() || !PSession->PChar)
+    {
+        return;
+    }
+
+    uint32            streak = 0;
+    timer::time_point since{};
+    {
+        std::lock_guard lock(gMutex);
+        auto&           s = gStates[PSession->PChar->id];
+        if (s.resendStreak++ == 0)
+        {
+            s.resendSince = timer::now();
+        }
+        streak = s.resendStreak;
+        since  = s.resendSince;
+    }
+
+    if (std::find(std::begin(kResendLog), std::end(kResendLog), streak) != std::end(kResendLog))
+    {
+        ShowWarningFmt("guards: resent the same datagram to {} {} times in a row over {:.1f}s ({} bytes). The client is not acknowledging it, so nothing new reaches it.",
+                       PSession->PChar->getName(),
+                       streak,
+                       seconds(timer::now() - since),
+                       PSession->server_packet_size);
+    }
+}
+
+void onNewDatagram(MapSession* PSession)
+{
+    if (!PSession->client.translated() || !PSession->PChar)
+    {
+        return;
+    }
+
+    uint32 streak = 0;
+    {
+        std::lock_guard lock(gMutex);
+        streak = std::exchange(gStates[PSession->PChar->id].resendStreak, 0);
+    }
+
+    if (streak >= kResendLog[0])
+    {
+        ShowInfoFmt("guards: {} acknowledged again after {} resends.", PSession->PChar->getName(), streak);
+    }
 }
 
 } // namespace compat::guards
