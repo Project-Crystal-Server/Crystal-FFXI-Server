@@ -374,7 +374,7 @@ auto LoadFromCharsSQL(CCharEntity* PChar) -> void
         PChar->loc.p.z        = rset->get<float>("pos_z");
         PChar->m_moghouseID   = rset->get<uint32>("moghouse");
         PChar->loc.boundary   = rset->get<uint16>("boundary");
-        PChar->accid          = rset->get<uint32>("accid");
+        PChar->cid            = rset->get<uint32>("accid");
         PChar->polId          = rset->get<uint64>("pol_id");
 
         PChar->profile.home_point.destination = rset->get<xi::ZoneId>("home_zone");
