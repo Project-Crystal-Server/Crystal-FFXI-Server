@@ -1099,7 +1099,7 @@ def player_admin_menu():
 
 
 def announce_menu():
-    from tools.announce import send_server_message
+    from announce import send_server_message
 
     message = input("What message would you like to send to the whole server?\n> ")
     if (
@@ -1332,7 +1332,7 @@ def shutdown_countdown():
         return True
 
     try:
-        from tools.announce import send_server_message
+        from announce import send_server_message
     except ImportError as e:
         print_red(f"Can't send warnings ({e}), see tools/requirements.txt")
         return True
