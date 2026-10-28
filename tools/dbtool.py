@@ -1349,9 +1349,11 @@ def shutdown_countdown():
     try:
         for remaining in marks:
             time.sleep(max(0, deadline - remaining - time.monotonic()))
-            if message:
-                send_server_message(message)
-            send_server_message(f"Server shutting down in {format_duration(remaining)}.")
+            warning = f"Server shutting down in {format_duration(remaining)}."
+            # Chat packets hold 150 bytes, so trim the message to keep the warning intact
+            room = 149 - len(warning) - 1
+            text = message.encode()[:room].decode(errors="ignore")
+            send_server_message(f"{text}\n{warning}" if text else warning)
         time.sleep(max(0, deadline - time.monotonic()))
     except KeyboardInterrupt:
         send_server_message("Server shutdown cancelled.")
