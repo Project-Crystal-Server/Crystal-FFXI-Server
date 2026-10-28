@@ -30,6 +30,8 @@ ipp_bytes = struct.pack("!Q", ipp)
 print(f"Connecting to endpoint: {ip_str}:{port}")
 
 sock.setsockopt(zmq.ROUTING_ID, ipp_bytes)
+# Don't hang on exit if xi_world goes away with messages still queued
+sock.setsockopt(zmq.LINGER, 1000)
 sock.connect("tcp://127.0.0.1:54003")
 
 
