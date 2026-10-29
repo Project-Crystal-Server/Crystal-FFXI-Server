@@ -1,4 +1,4 @@
-/*
+﻿/*
 ===========================================================================
 
   Copyright (c) 2026 Project Crystal Dev Team
@@ -53,6 +53,12 @@ constexpr uint8 kShopSlots = 16;
 
 // The 2010 client's battle message tables have 0x400 entries.
 constexpr uint16 kBattleMessages = 0x400;
+
+// The 2010 client has no "Incredibly Easy Prey", so its tier table is one entry shorter.
+constexpr uint16 kCheckMessageFirst       = 170;
+constexpr uint16 kCheckMessageLast        = 178;
+constexpr uint32 kCheckIncrediblyEasyPrey = 0x41;
+constexpr uint32 kCheckIncrediblyTough    = 0x47;
 
 // True if the container and slot exist on the 2010 client.
 auto itemSlotValid(const uint8 container, const uint8 slot) -> bool
@@ -132,11 +138,29 @@ auto itemSubcontainer(MapSession* /* PSession */, CBasicPacket& /* packet */) ->
     return Result::Drop;
 }
 
-// 0x029 - GP_SERV_BATTLE_MESSAGE
-// Bounds check the message number for the 2010 client.
+// 0x029 - GP_SERV_BATTLE_MESSAGE.
 auto battleMessage(MapSession* /* PSession */, CBasicPacket& packet) -> Result
 {
-    return packet.ref<uint16>(0x18) < kBattleMessages ? Result::Pass : Result::Drop;
+    // Bounds check the message number for the 2010 client
+    const uint16 messageNum = packet.ref<uint16>(0x18);
+    if (messageNum >= kBattleMessages)
+    {
+        return Result::Drop;
+    }
+
+    // The 'Incredibly Easy Prey' and 'Very Easy Prey' values were added in Aug 6, 2013 and Dec 10, 2021.
+    // Shift the /check tiers down one to match the pre-2013 tier table so that 'Incredibly Easy Prey'
+    // shows up as 'Easy Prey', and the rest don't get off-by-1ed.
+    if (messageNum >= kCheckMessageFirst && messageNum <= kCheckMessageLast)
+    {
+        auto& tier = packet.ref<uint32>(0x10);
+        if (tier > kCheckIncrediblyEasyPrey && tier <= kCheckIncrediblyTough)
+        {
+            tier -= 1;
+        }
+    }
+
+    return Result::Pass;
 }
 
 // 0x02D - BATTLE_MESSAGE2
