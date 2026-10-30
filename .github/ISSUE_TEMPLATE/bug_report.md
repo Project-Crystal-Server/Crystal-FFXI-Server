@@ -9,10 +9,11 @@ assignees: ''
 
 ## Platform
 
-[] PS2/PS3
-[] PCSX2
+- [ ] PS2/PS3
 
-## Effected Program
+- [ ] PCSX2
+
+## Effected program
 
 <!-- Where did this bug occur? PlayOnline? FFXI Lobby? FFXI World? -->
 
