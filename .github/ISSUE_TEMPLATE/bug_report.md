@@ -2,22 +2,23 @@
 name: "\U0001F41B Bug Report"
 about: Bug Report
 title: "\U0001F41B <Replace this with Bug Summary>"
-labels: bug, enhancement
+labels: bug
 assignees: ''
 
 ---
 
 ## Platform
 
-PS2? PCSX2? If latter, what version/fork?
+[] PS2/PS3
+[] PCSX2
 
-## Effected Area
+## Effected Program
 
-Is it POL? FFXI Lobby? FFXI World?
+<!-- Where did this bug occur? PlayOnline? FFXI Lobby? FFXI World? -->
 
-## POLID and Character Name
+## POLID and character name if in-game
 
-So we can track you down in the logs
+<!-- So we can track you down in the logs  -->
 
 ## Steps to reproduce
 
