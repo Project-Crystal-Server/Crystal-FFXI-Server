@@ -197,7 +197,7 @@ auto chatKind(const uint8 kind) -> uint8
         case 32:
             return 16; // linkshell, no speaker
         case 29:       // system 3
-            return 6;  // system 1
+            return 23;
         case 33:       // unity
         case 34:       // assist (J)
         case 35:       // assist (E)
