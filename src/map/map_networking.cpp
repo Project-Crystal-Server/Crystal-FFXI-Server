@@ -166,12 +166,6 @@ void MapNetworking::handle_incoming_packet(ByteSpan buffer, const IPP& ipp)
         std::swap(PBuff, PSession->server_packet_data);
         std::swap(size, PSession->server_packet_size);
     }
-
-    // If client is logging out, just close it.
-    if (PSession->shuttingDown == 1)
-    {
-        mapSessions_.destroySession(PSession);
-    }
 }
 
 int32 MapNetworking::map_decipher_packet(uint8* buff, size_t buffsize, MapSession* PSession, blowfish_t* pbfkey)
@@ -740,8 +734,8 @@ int32 MapNetworking::send_parse(uint8* buff, size_t* buffsize, MapSession* PSess
                     }
                     else
                     {
-                        // This probably isn't necessary - the session should be deleted shortly.
-                        db::preparedStmt("UPDATE accounts_sessions SET client_port = 0, last_zoneout_time = NOW() WHERE charid = ?", PSession->charID);
+                        // The session stays to resend this 0x00B, but the character can log in again right away
+                        db::preparedStmt("DELETE FROM accounts_sessions WHERE charid = ?", PSession->charID);
                     }
                 }
 
