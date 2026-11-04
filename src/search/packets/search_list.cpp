@@ -29,9 +29,9 @@
 #include <algorithm>
 #include <cstring>
 
-CSearchListPacket::CSearchListPacket(const uint32 Total, const SearchListLayout layout)
+CSearchListPacket::CSearchListPacket(const uint32 Total, const compatibility::SearchLayout& layout)
 : m_offset(192)
-, m_layout(layout)
+, m_layout(&layout)
 {
     memset(m_data, 0, sizeof(m_data));
 
@@ -61,12 +61,11 @@ auto CSearchListPacket::AddPlayer(const SearchEntity& player) -> bool
         m_offset = packBitsLE(m_data, player.name[c], m_offset, 7);
     }
 
-    // The 2010 PS2 client reads 8 bits and has area names for 1-252 only: send 0 ("unknown") for a zone it cannot hold
-    const bool ps2         = m_layout == SearchListLayout::Ps2_2010;
-    const auto areaBits    = ps2 ? 8 : 10;
-    const auto areaValue   = ps2 ? (player.zone <= 0xFF ? player.zone : 0) : player.zone;
-    const auto flags2Tag   = ps2 ? uint64(0x14) : static_cast<uint64>(SearchType::Flags2);
-    const auto languageTag = ps2 ? uint64(0x15) : static_cast<uint64>(SearchType::Language);
+    // Area width and the flags2 / language tags depend on the client's protocol (compatibility/search_layout.h)
+    const auto areaBits    = m_layout->areaBits;
+    const auto areaValue   = m_layout->area(player.zone);
+    const auto flags2Tag   = static_cast<uint64>(m_layout->flags2Tag);
+    const auto languageTag = static_cast<uint64>(m_layout->languageTag);
 
     m_offset = packBitsLE(m_data, static_cast<uint64>(SearchType::Area), m_offset, 5);
     m_offset = packBitsLE(m_data, areaValue, m_offset, areaBits);

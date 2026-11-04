@@ -160,7 +160,7 @@
 #include "packets/c2s/0x11c_party_request.h"
 #include "packets/c2s/0x11d_jump.h"
 #include "packets/c2s/validation.h"
-#include "packets/compat/guards.h"
+#include "compatibility/guards.h"
 #include "utils/moduleutils.h"
 
 namespace
@@ -202,7 +202,7 @@ void ValidatedPacketHandler(MapSession* const PSession, CCharEntity* const PChar
                        actualSize,
                        minSize,
                        maxSize);
-        compat::guards::onRejected(PSession, PChar, data);
+        compatibility::guards::onRejected(PSession, PChar, data);
         return;
     }
 
@@ -223,7 +223,7 @@ void ValidatedPacketHandler(MapSession* const PSession, CCharEntity* const PChar
     else
     {
         ShowWarningFmt("Invalid {} packet from {}: {}", T::name, PChar->getName(), result.errorString());
-        compat::guards::onRejected(PSession, PChar, data);
+        compatibility::guards::onRejected(PSession, PChar, data);
     }
 }
 

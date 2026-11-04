@@ -28,7 +28,7 @@
 class CLinkshellListPacket
 {
 public:
-    CLinkshellListPacket(uint32 linkshellid, uint32 Total, SearchListLayout layout = SearchListLayout::Current);
+    CLinkshellListPacket(uint32 linkshellid, uint32 Total, const compatibility::SearchLayout& layout = compatibility::todaysSearchLayout());
     ~CLinkshellListPacket() = default;
 
     auto AddPlayer(const SearchEntity& player) -> bool;
@@ -40,6 +40,6 @@ public:
 private:
     uint32           m_offset{};
     uint32           m_linkshellid{};
-    SearchListLayout m_layout{ SearchListLayout::Current };
+    const compatibility::SearchLayout* m_layout{ &compatibility::todaysSearchLayout() };
     uint8            m_data[1024]{};
 };
