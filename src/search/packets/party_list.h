@@ -28,7 +28,7 @@
 class CPartyListPacket
 {
 public:
-    CPartyListPacket(uint32 partyid, uint32 Total, SearchListLayout layout = SearchListLayout::Current);
+    CPartyListPacket(uint32 partyid, uint32 Total, const compatibility::SearchLayout& layout = compatibility::todaysSearchLayout());
     ~CPartyListPacket() = default;
 
     auto AddPlayer(const SearchEntity& player) -> bool;
@@ -37,8 +37,8 @@ public:
     auto GetSize() const -> uint16;
 
 private:
-    uint32           m_offset{};
-    SearchListLayout m_layout{ SearchListLayout::Current };
+    uint32                             m_offset{};
+    const compatibility::SearchLayout* m_layout{ &compatibility::todaysSearchLayout() };
 
     uint8 m_data[1024]{};
 };

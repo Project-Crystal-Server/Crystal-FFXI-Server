@@ -72,8 +72,8 @@ private:
     void HandleAuctionHouseRequest();
     void HandleAuctionHouseHistory();
 
-    auto _HandleSearchRequest(uint16_t length, SearchListLayout layout) -> SearchRequest;
-    void SendPlayersList(const SearchRequest& sr, SearchListLayout layout);
+    auto _HandleSearchRequest(uint16_t length, const compatibility::SearchLayout& layout) -> SearchRequest;
+    void SendPlayersList(const SearchRequest& sr, const compatibility::SearchLayout& layout);
 
     Scheduler&               scheduler_;
     blowfish_t               blowfish_;

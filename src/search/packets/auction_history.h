@@ -28,7 +28,7 @@
 class CAHHistoryPacket
 {
 public:
-    CAHHistoryPacket(AuctionHouseItem item, uint8 stack, SearchListLayout layout = SearchListLayout::Current);
+    CAHHistoryPacket(AuctionHouseItem item, uint8 stack, const compatibility::SearchLayout& layout = compatibility::todaysSearchLayout());
 
     void AddItem(const AuctionHouseHistory& item);
 

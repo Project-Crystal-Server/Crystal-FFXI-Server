@@ -27,9 +27,9 @@
 
 #include "entities/char_entity.h"
 
+#include "compatibility/guards.h"
+#include "compatibility/profile.h"
 #include "packets/basic.h"
-#include "packets/compat/guards.h"
-#include "packets/compat/profile.h"
 #include "packets/s2c/0x00b_logout.h"
 
 #include "utils/charutils.h"
@@ -102,7 +102,7 @@ void MapNetworking::handle_incoming_packet(ByteSpan buffer, const IPP& ipp)
     int32 decryptCount = recv_parse(PBuff.data(), &size, PSession, ipp);
     if (PSession == nullptr)
     {
-        compat::guards::onUnknownAddress(ipp, mapSessions_.getSessionsByIP(ipp.getIP()));
+        compatibility::guards::onUnknownAddress(ipp, mapSessions_.getSessionsByIP(ipp.getIP()));
         return;
     }
 
@@ -313,9 +313,7 @@ int32 MapNetworking::recv_parse(uint8* buff, size_t* buffsize, MapSession* PSess
             return -1;
         }
 
-        // Every client names its platform and build here; a build with a translation profile has its
-        // packets translated from now on (packets/compat)
-        // Consoles send Ver 0: the build comes from the version string their lobby login stored for the session
+        // Detect the connected client's version then apply the appropriate compatibility layer
         std::string build;
         uint32      expansions = 0;
         if (const auto rsetBuild = db::preparedStmt("SELECT client_version, client_expansions FROM accounts_sessions WHERE charid = ? LIMIT 1", packetCharID);
@@ -324,7 +322,7 @@ int32 MapNetworking::recv_parse(uint8* buff, size_t* buffsize, MapSession* PSess
             build      = rsetBuild->get<std::string>("client_version");
             expansions = rsetBuild->get<uint32>("client_expansions");
         }
-        PSession->client = compat::identify(loginPacket.sPlatform, loginPacket.Ver, build, expansions);
+        PSession->client = compatibility::identify(loginPacket.sPlatform, loginPacket.Ver, build, expansions);
         ShowInfoFmt("recv_parse: charid {} from {}: client {}", packetCharID, ipp.toString(), PSession->client.describe());
         if (PSession->client.console() && !PSession->client.translated())
         {
@@ -338,7 +336,7 @@ int32 MapNetworking::recv_parse(uint8* buff, size_t* buffsize, MapSession* PSess
         {
             const auto zone = rsetZone->get<uint16>("pos_zone");
             const auto home = rsetZone->get<uint16>("home_zone");
-            if (!compat::zoneAvailable(PSession, zone) && compat::zoneAvailable(PSession, home))
+            if (!compatibility::zoneAvailable(PSession, zone) && compatibility::zoneAvailable(PSession, home))
             {
                 ShowInfoFmt("recv_parse: charid {} is in zone {}, which this client has no data for; starting at home point zone {}", packetCharID, zone, home);
                 db::preparedStmt("UPDATE chars SET pos_zone = home_zone, pos_prevzone = home_zone, pos_rot = home_rot, "
@@ -559,12 +557,12 @@ int32 MapNetworking::parse(uint8* buff, size_t* buffsize, MapSession* PSession)
             // We're copying in and bounding only exactly what we want, so it's safe.
             std::memcpy(&parseScratchPacket_.ref<uint8>(0), SmallPD_ptr, PACKET_SIZE);
 
-            // A console client waits on some requests forever if nothing answers them (packets/compat/guards.h)
+            // An older client waits on some requests forever if nothing answers them (compatibility/guards.h)
             const bool translated = PSession->client.translated();
-            const bool dropped    = translated && compat::translateC2S(PSession, parseScratchPacket_) == compat::Result::Drop;
+            const bool dropped    = translated && compatibility::translateC2S(PSession, parseScratchPacket_) == compatibility::Result::Drop;
             if (translated)
             {
-                compat::guards::beforeDispatch(PSession, PChar, parseScratchPacket_);
+                compatibility::guards::beforeDispatch(PSession, PChar, parseScratchPacket_);
             }
             const size_t queued = PChar->getPacketList().size();
 
@@ -576,7 +574,7 @@ int32 MapNetworking::parse(uint8* buff, size_t* buffsize, MapSession* PSession)
 
             if (translated)
             {
-                compat::guards::afterDispatch(PSession, PChar, parseScratchPacket_, queued, dropped);
+                compatibility::guards::afterDispatch(PSession, PChar, parseScratchPacket_, queued, dropped);
             }
         }
     }
@@ -625,7 +623,7 @@ int32 MapNetworking::parse(uint8* buff, size_t* buffsize, MapSession* PSession)
 
     if (ref<uint16>(buff, 2) != PSession->server_packet_id)
     {
-        if (PSession->client.translated() && compat::tracing())
+        if (PSession->client.translated() && compatibility::tracing())
         {
             ShowInfoFmt("compat trace: client acked {}, server is at {}: resending the last datagram", ref<uint16>(buff, 2), PSession->server_packet_id);
         }
@@ -645,13 +643,13 @@ int32 MapNetworking::parse(uint8* buff, size_t* buffsize, MapSession* PSession)
 
         std::memcpy(PSession->server_packet_data.data(), buff, *buffsize);
 
-        compat::guards::onResend(PSession);
+        compatibility::guards::onResend(PSession);
         return -1;
     }
 
     // GT: increase the number of the sent packet only if new data is sent
 
-    compat::guards::onNewDatagram(PSession);
+    compatibility::guards::onNewDatagram(PSession);
     PSession->server_packet_id += 1;
 
     return 0;
@@ -742,9 +740,9 @@ int32 MapNetworking::send_parse(uint8* buff, size_t* buffsize, MapSession* PSess
                 // packetList is a fresh copy on every attempt, so translating in place is safe
                 // A dropped packet still counts as consumed, or it (and what follows) would be sent again;
                 // only what goes in the datagram counts against PacketCount (a PS2 zone-in drops dozens).
-                if (PSession->client.translated() && compat::translateS2C(PSession, *PSmallPacket) == compat::Result::Drop)
+                if (PSession->client.translated() && compatibility::translateS2C(PSession, *PSmallPacket) == compatibility::Result::Drop)
                 {
-                    std::ignore = compat::takeEmittedS2C();
+                    std::ignore = compatibility::takeEmittedS2C();
                     continue;
                 }
 
@@ -754,10 +752,10 @@ int32 MapNetworking::send_parse(uint8* buff, size_t* buffsize, MapSession* PSess
 
                 packets++;
 
-                // A translator may have split the packet in two (packets/compat/profile.h emitS2C)
+                // A translator may have split the packet in two (compatibility/profile.h emitS2C)
                 if (PSession->client.translated())
                 {
-                    for (auto& extra : compat::takeEmittedS2C())
+                    for (auto& extra : compatibility::takeEmittedS2C())
                     {
                         if (extra.size() < 4 || *buffsize + extra.size() >= kMaxBufferSize)
                         {

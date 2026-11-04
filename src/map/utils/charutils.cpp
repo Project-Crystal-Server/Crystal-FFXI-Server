@@ -50,9 +50,9 @@
 #include "ai/states/range_state.h"
 #include "ai/states/weaponskill_state.h"
 
+#include "compatibility/profile.h"
 #include "packets/char_status.h"
 #include "packets/char_sync.h"
-#include "packets/compat/profile.h"
 #include "packets/s2c/0x009_message.h"
 #include "packets/s2c/0x00b_logout.h"
 #include "packets/s2c/0x01b_job_info.h"
@@ -6778,11 +6778,9 @@ auto SendToZone(CCharEntity* PChar, const xi::ZoneId zoneId) -> bool
         return false;
     }
 
-    // A console client whose install has no files for the zone would stand in it with nothing around
-    // (packets/compat). Send it to its home point instead, if that zone is one it has.
     const auto homeZone = static_cast<uint16>(PChar->profile.home_point.destination);
-    if (!compat::zoneAvailable(PChar->PSession, static_cast<uint16>(zoneId)) && static_cast<uint16>(zoneId) != homeZone &&
-        compat::zoneAvailable(PChar->PSession, homeZone))
+    if (!compatibility::zoneAvailable(PChar->PSession, static_cast<uint16>(zoneId)) && static_cast<uint16>(zoneId) != homeZone &&
+        compatibility::zoneAvailable(PChar->PSession, homeZone))
     {
         ShowInfoFmt("charutils::SendToZone : {}'s client ({}) has no data for zone {}; sending them to their home point", PChar->name, PChar->PSession->client.describe(), zoneId);
         PChar->pushPacket<GP_SERV_COMMAND_SYSTEMMES>(0, 0, MsgStd::CouldNotEnter);

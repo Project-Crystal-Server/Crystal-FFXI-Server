@@ -27,7 +27,7 @@
 #include <algorithm>
 #include <cstring>
 
-CAHHistoryPacket::CAHHistoryPacket(const AuctionHouseItem item, const uint8 stack, const SearchListLayout layout)
+CAHHistoryPacket::CAHHistoryPacket(const AuctionHouseItem item, const uint8 stack, const compatibility::SearchLayout& layout)
 {
     // Comments and RE by atom0s
     ref<uint8>(m_PData, 0x0A)  = 0x80;        // flags, may be int8 as it's checked against negative.
@@ -39,9 +39,8 @@ CAHHistoryPacket::CAHHistoryPacket(const AuctionHouseItem item, const uint8 stac
     ref<uint16>(m_PData, 0x16) = 0;           // Unknown use
     ref<uint16>(m_PData, 0x18) = item.ItemID;
 
-    // The 2010 client has no current price or category here. Its sales start right after the item number,
-    // so with today's header every price, date and name would be read 6 bytes off.
-    if (layout == SearchListLayout::Ps2_2010)
+    // Without the current price and category the sales start right after the item number
+    if (!layout.historyPriceAndCategory)
     {
         m_entriesStart               = 0x1A;
         ref<uint16>(m_PData, (0x08)) = m_entriesStart;

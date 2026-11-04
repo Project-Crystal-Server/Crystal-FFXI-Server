@@ -31,7 +31,7 @@ CREATE TABLE `accounts_sessions` (
   `client_addr` int(10) unsigned NOT NULL DEFAULT '0',
   `client_port` smallint(5) unsigned NOT NULL DEFAULT '0',
   `version_mismatch` tinyint(1) unsigned NOT NULL DEFAULT '0',
-  `client_version` varchar(16) NOT NULL DEFAULT '',        -- lobby login version string (console builds; packets/compat)
+  `client_version` varchar(16) NOT NULL DEFAULT '',        -- lobby login version string (console builds; compatibility)
   `client_expansions` int(10) unsigned NOT NULL DEFAULT '0', -- expansions the client has installed
   `seacom_type` TINYINT(1) unsigned NOT NULL DEFAULT '0',
   `seacom_message` TINYBLOB NULL DEFAULT NULL,
