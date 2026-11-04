@@ -33,7 +33,6 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstring>
-#include <fstream>
 #include <iterator>
 #include <map>
 #include <string>
@@ -50,79 +49,17 @@
 namespace
 {
 
-// The tag the 2010 PS2 client gives the second flag word in search requests (today's clients use 0x16).
-constexpr uint8 kPs2Flags2Tag = 0x14;
-
-// The lobby version strings of the 2010 PS2 client: the same lines the map server pins to that client in
-// res/compat/ps2-20100904/versions.txt (one per line, # starts a comment)
-auto ps2_2010Builds() -> const std::unordered_set<std::string>&
-{
-    static const auto builds = []
-    {
-        std::unordered_set<std::string> out;
-        std::ifstream                   file("res/compat/ps2-20100904/versions.txt");
-        std::string                     line;
-        while (std::getline(file, line))
-        {
-            if (const auto comment = line.find('#'); comment != std::string::npos)
-            {
-                line.resize(comment);
-            }
-
-            const auto begin = line.find_first_not_of(" \t\r");
-            if (begin == std::string::npos)
-            {
-                continue;
-            }
-            out.insert(line.substr(begin, line.find_last_not_of(" \t\r") - begin + 1));
-        }
-        return out;
-    }();
-    return builds;
-}
-
-// Load the item bin for this version so we can filter out the items from the auction list.
-// res/compat/ps2-20100904/items.bin
-auto ps2_2010Items() -> const std::vector<uint8>&
-{
-    static const auto items = []
-    {
-        const std::string  path = "res/compat/ps2-20100904/items.bin";
-        std::ifstream      file(path, std::ios::binary);
-        char               magic[8] = {};
-        std::vector<uint8> bits(0x2000);
-        if (!file.read(magic, sizeof(magic)) || std::memcmp(magic, "PS2ITM01", 8) != 0 ||
-            !file.read(reinterpret_cast<char*>(bits.data()), static_cast<std::streamsize>(bits.size())))
-        {
-            ShowWarningFmt("search: {} missing or invalid; auction house items are not filtered", path);
-            bits.clear();
-        }
-        return bits;
-    }();
-    return items;
-}
-
-// Does the 2010 PS2 client have this item? Items it lacks show as "." in its auction house lists.
-auto ps2_2010HasItem(const uint16 itemId) -> bool
-{
-    const auto& bits = ps2_2010Items();
-    if (bits.empty() || itemId == 0 || itemId == 0xFFFF)
-    {
-        return true;
-    }
-    return (bits[itemId >> 3] >> (itemId & 7)) & 1;
-}
-
-// The layout a search result has to take for the client behind this connection. The client is known by the version
-// string its lobby login stored on the session of its address (the same lookup the map server makes).
-auto searchLayoutFor(const std::string& ipAddress) -> SearchListLayout
+// The client behind this connection, known by the version string its lobby login stored on the session of its
+// address (the same lookup the map server makes): which search layout it reads and which items it has
+// (compatibility/search_layout.h).
+auto searchClientFor(const std::string& ipAddress) -> compatibility::SearchClient
 {
     const auto rset = db::preparedStmt("SELECT client_version FROM accounts_sessions WHERE client_addr = ? AND client_version <> '' LIMIT 1", str2ip(ipAddress));
-    if (rset && rset->rowsCount() != 0 && rset->next() && ps2_2010Builds().contains(rset->get<std::string>("client_version")))
+    if (rset && rset->rowsCount() != 0 && rset->next())
     {
-        return SearchListLayout::Ps2_2010;
+        return compatibility::searchClient(rset->get<std::string>("client_version"));
     }
-    return SearchListLayout::Current;
+    return {};
 }
 
 } // namespace
@@ -427,10 +364,9 @@ void SearchHandler::HandleGroupListRequest()
     const uint32 allianceid   = ref<uint32>(buffer_.data(), 0x14);
     uint32       linkshellid1 = ref<uint32>(buffer_.data(), 0x18);
 
-    // The 2010 PS2 client has one linkshell and sends 12 bytes here. What follows is padding,
-    // so there is no second linkshell to read.
-    const auto layout       = searchLayoutFor(ipAddress_);
-    uint32     linkshellid2 = layout == SearchListLayout::Ps2_2010 ? 0 : ref<uint32>(buffer_.data(), 0x1C);
+    // A client with one linkshell sends 12 bytes here. What follows is padding, so there is no second id to read.
+    const auto& layout       = *searchClientFor(ipAddress_).layout;
+    uint32      linkshellid2 = layout.linkshells < 2 ? 0 : ref<uint32>(buffer_.data(), 0x1C);
 
     ShowInfoFmt("SEARCH::PartyID = {}", partyid);
     ShowInfoFmt("SEARCH::LinkshellIDs = {}, {}", linkshellid1, linkshellid2);
@@ -523,7 +459,7 @@ void SearchHandler::HandleSearchComment()
 
 void SearchHandler::HandleSearchRequest(const uint16_t length)
 {
-    const auto layout = searchLayoutFor(ipAddress_);
+    const auto& layout = *searchClientFor(ipAddress_).layout;
     SendPlayersList(_HandleSearchRequest(length, layout), layout);
 }
 
@@ -553,10 +489,10 @@ void SearchHandler::HandleIdListRequest(const uint16_t length)
         return;
     }
 
-    SendPlayersList(sr, searchLayoutFor(ipAddress_));
+    SendPlayersList(sr, *searchClientFor(ipAddress_).layout);
 }
 
-void SearchHandler::SendPlayersList(const SearchRequest& sr, const SearchListLayout layout)
+void SearchHandler::SendPlayersList(const SearchRequest& sr, const compatibility::SearchLayout& layout)
 {
     const CDataLoader PDataLoader;
     int               totalCount = 0;
@@ -631,10 +567,8 @@ void SearchHandler::HandleAuctionHouseRequest()
     auto              ItemList = PDataLoader.GetAHItemsToCategory(AHCatID, sortKeys);
 
     // Keep items the client has no record of out of its list.
-    if (searchLayoutFor(ipAddress_) == SearchListLayout::Ps2_2010)
-    {
-        std::erase_if(ItemList, [](const AuctionHouseItem& item) { return !ps2_2010HasItem(item.ItemID); });
-    }
+    const auto client = searchClientFor(ipAddress_);
+    std::erase_if(ItemList, [&client](const AuctionHouseItem& item) { return !client.hasItem(item.ItemID); });
 
     const std::size_t itemListSize = ItemList.size();
     const std::size_t PacketsCount = (itemListSize / 20) + (itemListSize % 20 != 0) + (itemListSize == 0);
@@ -668,7 +602,7 @@ void SearchHandler::HandleAuctionHouseHistory()
     const auto             HistoryList = PDataLoader.GetAHItemHistory(ItemID, stack != 0);
     const AuctionHouseItem item        = PDataLoader.GetAHItemFromItemID(ItemID);
 
-    CAHHistoryPacket PAHPacket = CAHHistoryPacket(item, stack, searchLayoutFor(ipAddress_));
+    CAHHistoryPacket PAHPacket = CAHHistoryPacket(item, stack, *searchClientFor(ipAddress_).layout);
 
     for (const auto& i : HistoryList)
     {
@@ -681,7 +615,7 @@ void SearchHandler::HandleAuctionHouseHistory()
     searchPackets_.emplace_back(PAHPacket.GetData(), length);
 }
 
-auto SearchHandler::_HandleSearchRequest(const uint16_t length, const SearchListLayout layout) -> SearchRequest
+auto SearchHandler::_HandleSearchRequest(const uint16_t length, const compatibility::SearchLayout& layout) -> SearchRequest
 {
     // This function constructs a `search_req` based on which query should be sent to the database.
     // The results from the database will eventually be sent to the client.
@@ -716,9 +650,6 @@ auto SearchHandler::_HandleSearchRequest(const uint16_t length, const SearchList
 
     uint8 commentType = 0;
 
-    // The 2010 client sends areas as 8 bits, puts an exact-match bit ("=Name") ahead of a 4-bit name length,
-    // and tags its second flag word 0x14 where today's clients use 0x16.
-    const bool ps2 = layout == SearchListLayout::Ps2_2010;
 
     while (bitOffset < workloadBits)
     {
@@ -729,7 +660,7 @@ auto SearchHandler::_HandleSearchRequest(const uint16_t length, const SearchList
         }
 
         const auto rawType   = static_cast<uint8>(unpackBitsLE(&buffer_[0x11], bitOffset, 5));
-        const auto EntryType = ps2 && rawType == kPs2Flags2Tag ? SearchType::Flags2 : static_cast<SearchType>(rawType);
+        const auto EntryType = rawType == layout.flags2Tag ? SearchType::Flags2 : static_cast<SearchType>(rawType);
         bitOffset += 5;
 
         if ((EntryType != SearchType::Friend) && (EntryType != SearchType::Linkshell) && (EntryType != SearchType::Linkshell2) && (EntryType != SearchType::Comment) && (EntryType != SearchType::Flags2))
@@ -757,14 +688,14 @@ auto SearchHandler::_HandleSearchRequest(const uint16_t length, const SearchList
                         bitOffset = workloadBits;
                         break;
                     }
-                    // Names are matched by prefix either way, so the 2010 exact-match bit is skipped.
-                    if (ps2)
+                    // Names are matched by prefix either way, so an exact-match bit is skipped
+                    if (layout.nameExactMatchBit)
                     {
                         bitOffset += 1;
                     }
 
                     // Length clamped to the name's 15 chars; still consume every char
-                    const auto  lengthBits = ps2 ? 4 : 5;
+                    const auto  lengthBits = layout.nameLengthBits;
                     const uint8 rawNameLen = static_cast<uint8>(unpackBitsLE(&buffer_[0x11], bitOffset, lengthBits));
                     bitOffset += lengthBits;
 
@@ -792,7 +723,7 @@ auto SearchHandler::_HandleSearchRequest(const uint16_t length, const SearchList
                 }
                 else // 8 Bit = 1 Byte per Area Code
                 {
-                    const auto areaBits = ps2 ? 8 : 10;
+                    const auto areaBits = layout.areaBits;
                     const auto area     = static_cast<uint16>(unpackBitsLE(&buffer_[0x11], bitOffset, areaBits));
                     bitOffset += areaBits;
 

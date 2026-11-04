@@ -1,4 +1,4 @@
-"""Every event number each zone's 2010 event files carry -> res/compat/ps2-20100904/events.bin.
+"""Every event number each zone's 2010 event files carry -> res/compatibility/20100904_2/events.bin.
 
 Event files (event_files.parse_events): 5820 + zone, and extra files at 56911 + zone and 65691 + zone.
 A file's zone comes from its entity blocks (0x01000000 | zone << 12 | index), else from its id.

@@ -1,5 +1,6 @@
 add_subdirectory(action)
 add_subdirectory(ai)
+add_subdirectory(compatibility)
 add_subdirectory(data)
 add_subdirectory(entities)
 add_subdirectory(enums)
@@ -225,6 +226,8 @@ xi_add_map_group_library(xi_map_battle
 xi_add_map_group_library(xi_map_entities ${ENTITY_SOURCES})
 xi_add_map_group_library(xi_map_packets_c2s ${PACKET_C2S_SOURCES})
 xi_add_map_group_library(xi_map_packets_s2c ${PACKET_S2C_SOURCES})
+xi_add_map_group_library(xi_map_compatibility ${COMPATIBILITY_SOURCES})
+target_link_libraries(xi_map_compatibility PUBLIC xi_compatibility)
 
 target_include_directories(xi_map PRIVATE ${module_include_dirs})
 target_link_libraries(xi_map PRIVATE xi_map_core)

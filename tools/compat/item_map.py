@@ -2,7 +2,7 @@
 
 Item DATs: 0xC00-byte records, bytes rotated by 5; u32 item id first. Each record holds a string table
 {u32 count; {u32 offset, u32 type}[count]; ...} whose first entry is the name, at table + offset + 0x1C.
-Output: res/compat/ps2-20100904/items.bin = "PS2ITM01" + 0x10000 bits (bit = item id). Gil (0xFFFF) is always set."""
+Output: res/compatibility/20100904_2/items.bin = "PS2ITM01" + 0x10000 bits (bit = item id). Gil (0xFFFF) is always set."""
 import os, struct, sys
 from ffxidat import *
 
