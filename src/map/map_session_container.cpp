@@ -283,6 +283,12 @@ void MapSessionContainer::cleanupSessions(IPP mapIPP)
 
                     sessions_.erase(it++);
                 }
+                else if (map_session_data->shuttingDown == 1)
+                {
+                    // Its account session was deleted when the 0x00B went out, and may belong to a new login by now
+                    ShowDebugFmt("map_cleanup: closing logged out session {} (charid {})", map_session_data->client_ipp.toString(), map_session_data->charID);
+                    sessions_.erase(it++);
+                }
                 else
                 {
                     ShowWarningFmt("map_cleanup: session {} (charid {}) timed out without a character, closing", map_session_data->client_ipp.toString(), map_session_data->charID);
