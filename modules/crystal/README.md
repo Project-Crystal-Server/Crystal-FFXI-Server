@@ -2,6 +2,12 @@
 
 Project Crystal's own module.
 
+## Help desk
+
+`cpp/help_desk.cpp` turns off in-game GM calls and points players at the Crystal FFXI Discord. It replaces
+Phoenix's `phoenix/cpp/help_desk_redirect.cpp`, so `init.txt` lists the Phoenix C++ files one by one without that
+file and adds `crystal/cpp`. A new file in `phoenix/cpp` has to be added to that list too.
+
 ## Turning off what the 2010 PS2 client lacks
 
 Turns off the NPCs, mobs and items the 2010 PS2 client (patch `20100904_2`) has no entry for, so a server

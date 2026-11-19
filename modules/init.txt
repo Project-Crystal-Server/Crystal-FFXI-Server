@@ -73,8 +73,24 @@ custom/lua/claim_shield.lua
 era/lua
 
 # Phoenix modules
-phoenix/cpp
+# Listed one by one so phoenix/cpp/help_desk_redirect.cpp stays out; crystal/cpp/help_desk.cpp replaces it.
+phoenix/cpp/account_ban.cpp
+phoenix/cpp/account_jail.cpp
+phoenix/cpp/account_seal_timers.cpp
+phoenix/cpp/account_vars.cpp
+phoenix/cpp/chat_adjustments.cpp
+phoenix/cpp/cosmetic_wardrobe.cpp
+phoenix/cpp/fishing_history.cpp
+phoenix/cpp/fishing_meters.cpp
+phoenix/cpp/gil_audit.cpp
+phoenix/cpp/guild_shop_persistence.cpp
+phoenix/cpp/lockstyle_job_block.cpp
+phoenix/cpp/player_count.cpp
+phoenix/cpp/treant_gate.cpp
 phoenix/lua
+
+# Crystal modules
+crystal/cpp
 
 # Dynamis
 phoenix/dynamis/lua/
