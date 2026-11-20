@@ -1,9 +1,10 @@
 -----------------------------------
 -- Wardrobe Unlock System
+-- Enable by setting ENABLE_WARDROBE_UNLOCKS = true in settings/main.lua.
 -----------------------------------
 require('modules/module_utils')
 -----------------------------------
-local m = Module:new('phoenix_wardrobe_unlocks')
+local m = Module:new('phoenix_wardrobe_unlocks', xi.settings.main.ENABLE_WARDROBE_UNLOCKS == true)
 
 local bagNames =
 {
