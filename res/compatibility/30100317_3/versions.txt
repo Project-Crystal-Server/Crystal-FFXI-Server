@@ -1,0 +1,3 @@
+# The client versions this profile serves: the version string the lobby read from the client's patch.ver,
+# or the Ver field of its login packet (GP_CLI_COMMAND_LOGIN), one per line
+30100317_3

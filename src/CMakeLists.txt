@@ -1,4 +1,5 @@
 add_subdirectory(common)
+add_subdirectory(compatibility)
 add_subdirectory(map)
 add_subdirectory(search)
 add_subdirectory(world)

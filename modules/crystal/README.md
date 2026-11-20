@@ -8,7 +8,7 @@ Turns off the NPCs, mobs and items the 2010 PS2 client (patch `20100904_2`) has 
 that serves it doesn't run content its players can't see.
 
 It uses the same compat maps the map server uses to translate packets for that client,
-`res/compat/ps2-20100904/entity_map.bin` and `items.bin`. Anything the translator would hide from a 2010
+`res/compatibility/20100904_2/entity_map.bin` and `items.bin`. Anything the translator would hide from a 2010
 session is turned off here:
 
 - NPCs (`data/zones/*/npcs.yaml`): `status: disappear` and `widescan: false`, the same as the core does for an
