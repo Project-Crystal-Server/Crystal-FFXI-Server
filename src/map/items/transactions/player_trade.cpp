@@ -111,6 +111,8 @@ auto PlayerTradeTransaction::start(CCharEntity* initiator, CCharEntity* target) 
 
 void PlayerTradeTransaction::cancel(CCharEntity* leaving)
 {
+    leaving->pushPacket<GP_SERV_COMMAND_ITEM_TRADE_RES>(leaving, GP_ITEM_TRADE_RES_KIND::Cancell);
+
     if (auto* transaction = leaving->activePlayerTradeTransaction())
     {
         transaction->abort(leaving);
