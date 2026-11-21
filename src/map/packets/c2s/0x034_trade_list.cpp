@@ -55,6 +55,11 @@ auto GP_CLI_COMMAND_TRADE_LIST::validate(MapSession* PSession, const CCharEntity
         .range("TradeIndex", this->TradeIndex, 0, 8)
         .custom([&](PacketValidator& v)
                 {
+                    if (this->ItemNum == 0)
+                    {
+                        return;
+                    }
+
                     v.mustEqual(this->ItemNo == static_cast<uint16>(ITEMID::GIL),
                                 this->TradeIndex == PlayerTradeTransaction::GilSlot,
                                 "Gil belongs in the gil trade slot");
