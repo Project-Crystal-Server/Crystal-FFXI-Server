@@ -206,7 +206,9 @@ void MapSessionContainer::cleanupSessions(IPP mapIPP)
 
         if (now > map_session_data->last_update + 5s)
         {
-            if (PChar != nullptr && !PChar->isLinkDead)
+            const bool zoning = map_session_data->blowfish.status == BLOWFISH_PENDING_ZONE;
+
+            if (PChar != nullptr && !PChar->isLinkDead && !zoning)
             {
                 db::preparedStmt("UPDATE char_flags SET disconnecting = 1 WHERE charid = ?", map_session_data->charID);
 
