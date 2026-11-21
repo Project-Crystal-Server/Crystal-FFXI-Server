@@ -50,6 +50,9 @@ constexpr uint8 kGuildListEntries = 30;
 // Number of titles in legacy client's title message table.
 constexpr uint32 kTitleCount = 0x2E1;
 
+// Legacy clients only know items in the inventory (container 0).
+constexpr uint8 kInventory = 0;
+
 // Maps a group kind to legacy client's numbering: 0 party, 1 linkshell, 2 alliance.
 // Today alliance is 5. The client uses the kind as a table index, so anything else is rejected.
 auto groupKind(const uint8 kind) -> std::optional<uint8>
@@ -306,15 +309,23 @@ auto groupAttr(MapSession*, CBasicPacket& packet) -> Result
 }
 
 // 0x0E0 - GP_SERV_GROUP_COMLINK
-// Legacy clients have one linkshell. Updates for Linkshell 2 are dropped.
+// Legacy clients read only the first byte, as the inventory slot of their equipped linkshell (0 for none).
+// Today's packet has the linkshell number there and the slot after it, so the 2010 client took slot 1 for
+// its linkshell and its menus offered no unequip or pearl options. Updates for Linkshell 2 are dropped.
 auto groupComlink(MapSession*, CBasicPacket& packet) -> Result
 {
-    if (packet.ref<uint8>(0x04) == 2)
+    if (packet.ref<uint8>(0x04) != 1)
     {
         return Result::Drop;
     }
 
-    return Result::Pass;
+    const uint8 itemIndex = packet.ref<uint8>(0x05);
+    const uint8 container = packet.ref<uint8>(0x06);
+
+    packet.ref<uint8>(0x04) = container == kInventory ? itemIndex : 0;
+    packet.ref<uint8>(0x05) = 0;
+    packet.ref<uint8>(0x06) = 0;
+    return Result::Rewritten;
 }
 
 // 0x0FA - MYROOM_OPERATION
