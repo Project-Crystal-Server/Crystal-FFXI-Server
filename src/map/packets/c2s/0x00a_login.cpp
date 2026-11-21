@@ -89,6 +89,10 @@ void GP_CLI_COMMAND_LOGIN::process(MapSession* PSession, CCharEntity* PChar) con
 
         PSession->shuttingDown = 0;
 
+        // The character was just loaded, so it is not link dead. Clear the flag the search server reads too,
+        // since a logout or a long zone can leave it set and the map cleanup only clears flags it set itself.
+        db::preparedStmt("UPDATE char_flags SET disconnecting = 0 WHERE charid = ?", PChar->id);
+
         const auto destination = PChar->loc.destination;
         CZone*     destZone    = zoneutils::GetZone(destination);
 
