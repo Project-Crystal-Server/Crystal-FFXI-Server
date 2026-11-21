@@ -3049,7 +3049,8 @@ void CCharEntity::tryStartNextEvent()
         }
         else
         {
-            animation = this->isDead() ? xi::Animation::Death : xi::Animation::None;
+            const bool isDead = this->health.hp <= 0 || (this->status != xi::Status::Disappear && this->isDead());
+            animation         = isDead ? xi::Animation::Death : xi::Animation::None;
         }
 
         sendServerStatus_ = true;
