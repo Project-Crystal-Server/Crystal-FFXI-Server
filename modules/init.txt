@@ -91,6 +91,7 @@ phoenix/lua
 
 # Crystal modules
 crystal/cpp
+crystal/lua
 
 # Dynamis
 phoenix/dynamis/lua/

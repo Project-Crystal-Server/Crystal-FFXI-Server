@@ -8,6 +8,15 @@ Project Crystal's own module.
 Phoenix's `phoenix/cpp/help_desk_redirect.cpp`, so `init.txt` lists the Phoenix C++ files one by one without that
 file and adds `crystal/cpp`. A new file in `phoenix/cpp` has to be added to that list too.
 
+## Legacy client events
+
+`lua/` sends older events the params they were written for, picked with `player:isClientVersionAfter()`
+and the other client version checks. Today's clients are after every version, so they're left alone:
+
+- `lua/shami_legacy_seals.lua`: Shami's seal trade (Port Jeuno event 321), for clients before `20110510_0`.
+  The 2010 event takes one seal type (0 Beastmen's, 1 Kindred's) and the new balance, so a legacy trade must
+  hold one of those two seals only. Crests and mixed trades are handed back.
+
 ## Turning off what the 2010 PS2 client lacks
 
 Turns off the NPCs, mobs and items the 2010 PS2 client (patch `20100904_2`) has no entry for, so a server

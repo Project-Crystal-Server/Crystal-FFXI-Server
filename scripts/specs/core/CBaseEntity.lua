@@ -395,6 +395,26 @@ function CBaseEntity:isPC()
 end
 
 ---@nodiscard
+---@param version string
+---@param inclusive boolean?
+---@return boolean
+function CBaseEntity:isClientVersionBefore(version, inclusive)
+end
+
+---@nodiscard
+---@param version string
+---@return boolean
+function CBaseEntity:isClientVersion(version)
+end
+
+---@nodiscard
+---@param version string
+---@param inclusive boolean?
+---@return boolean
+function CBaseEntity:isClientVersionAfter(version, inclusive)
+end
+
+---@nodiscard
 ---@return boolean
 function CBaseEntity:isNPC()
 end

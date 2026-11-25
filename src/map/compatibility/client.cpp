@@ -63,6 +63,48 @@ auto ClientInfo::describe() const -> std::string
     return fmt::format("{} {}Ver {:08X} expansions {:X} ({})", base, version.text.empty() ? "" : version.text + " ", ver, expansions, profile ? profile->name() : "today's layout");
 }
 
+auto ClientInfo::versionEpoch() const -> uint32
+{
+    if (const auto epoch = versionToEpoch(version.text))
+    {
+        return epoch;
+    }
+    return profile ? versionToEpoch(profile->name()) : 0;
+}
+
+auto ClientInfo::isVersionBefore(const std::string_view other, const bool inclusive) const -> bool
+{
+    const auto client = versionEpoch();
+    const auto target = versionToEpoch(other);
+    if (!target || !client)
+    {
+        return false;
+    }
+    return inclusive ? client <= target : client < target;
+}
+
+auto ClientInfo::isVersion(const std::string_view other) const -> bool
+{
+    const auto client = versionEpoch();
+    const auto target = versionToEpoch(other);
+    return target && client == target;
+}
+
+auto ClientInfo::isVersionAfter(const std::string_view other, const bool inclusive) const -> bool
+{
+    const auto client = versionEpoch();
+    const auto target = versionToEpoch(other);
+    if (!target)
+    {
+        return false;
+    }
+    if (!client)
+    {
+        return true;
+    }
+    return inclusive ? client >= target : client > target;
+}
+
 auto identify(const uint8* sPlatform, const uint32 ver, const std::string& version, const uint32 expansions) -> ClientInfo
 {
     ClientInfo info;
