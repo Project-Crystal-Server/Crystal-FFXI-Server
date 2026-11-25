@@ -128,4 +128,33 @@ auto Version::describe() const -> std::string
     return fmt::format("{} {}", platformName(platform), text);
 }
 
+auto versionToEpoch(const std::string_view text) -> uint32
+{
+    const auto v = Version::parse(text);
+    if (!v)
+    {
+        return 0;
+    }
+
+    const int32 year  = static_cast<int32>(v->date / 10000);
+    const int32 month = static_cast<int32>(v->date / 100 % 100);
+    const int32 day   = static_cast<int32>(v->date % 100);
+
+    constexpr uint8 kDaysInMonth[] = { 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+    const bool      leap           = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+    if (month < 1 || month > 12 || day < 1 || day > kDaysInMonth[month - 1] || (month == 2 && day == 29 && !leap))
+    {
+        return 0;
+    }
+
+    const int32  y    = month <= 2 ? year - 1 : year;
+    const int32  era  = y / 400;
+    const int32  yoe  = y - era * 400;
+    const int32  doy  = (153 * (month + (month > 2 ? -3 : 9)) + 2) / 5 + day - 1;
+    const int32  doe  = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    const uint32 days =static_cast<uint32>(era * 146097 + doe - 719468);
+
+    return days * 86400 + v->revision;
+}
+
 } // namespace compatibility

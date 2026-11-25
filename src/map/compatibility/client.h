@@ -52,6 +52,11 @@ struct ClientInfo
         return profile != nullptr;
     }
 
+    auto versionEpoch() const -> uint32;
+    auto isVersionBefore(std::string_view version, bool inclusive = false) const -> bool;
+    auto isVersion(std::string_view version) const -> bool;
+    auto isVersionAfter(std::string_view version, bool inclusive = false) const -> bool;
+
     // "PS2 20100904_2 Ver 00000000 expansions 1E (20100904_2)", for logs and GM tools
     auto describe() const -> std::string;
 };

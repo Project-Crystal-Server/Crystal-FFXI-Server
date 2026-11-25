@@ -65,4 +65,6 @@ struct Version
     auto describe() const -> std::string;
 };
 
+auto versionToEpoch(std::string_view text) -> uint32;
+
 } // namespace compatibility

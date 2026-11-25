@@ -142,6 +142,9 @@ public:
     uint8 getObjType() const;
 
     bool isPC() const;
+    bool isClientVersionBefore(const std::string& version, sol::optional<bool> inclusive) const;
+    bool isClientVersion(const std::string& version) const;
+    bool isClientVersionAfter(const std::string& version, sol::optional<bool> inclusive) const;
     bool isNPC() const;
     bool isMob() const;
     bool isPet() const;

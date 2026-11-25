@@ -48,6 +48,7 @@
 #include "job_points.h"
 #include "latent_effect_container.h"
 #include "linkshell.h"
+#include "map_session.h"
 #include "mob_spell_container.h"
 #include "mob_spell_list.h"
 #include "mobskill.h"
@@ -1812,6 +1813,81 @@ uint8 CLuaBaseEntity::getObjType() const
 bool CLuaBaseEntity::isPC() const
 {
     return m_PBaseEntity->objtype == TYPE_PC;
+}
+
+/************************************************************************
+ *  Function: isClientVersionBefore()
+ *  Purpose : Returns true if the player's client is older than a version
+ *  Example : if player:isClientVersionBefore('20110510_0') then
+ *  Notes   : Versions compare by patch date and revision, whatever the platform
+ *          : digit. A client with no known version is today's. inclusive
+ *          : also matches the same version.
+ ************************************************************************/
+
+bool CLuaBaseEntity::isClientVersionBefore(const std::string& version, sol::optional<bool> inclusive) const
+{
+    const auto* PChar = dynamic_cast<CCharEntity*>(m_PBaseEntity);
+    if (!PChar || !PChar->PSession)
+    {
+        return false;
+    }
+
+    if (!compatibility::versionToEpoch(version))
+    {
+        ShowWarningFmt("isClientVersionBefore: invalid version '{}'", version);
+        return false;
+    }
+
+    return PChar->PSession->client.isVersionBefore(version, inclusive.value_or(false));
+}
+
+/************************************************************************
+ *  Function: isClientVersion()
+ *  Purpose : Returns true if the player's client is the same version
+ *  Example : if player:isClientVersion('20100904_2') then
+ *  Notes   : The platform digit is ignored: 20100904_2 matches 30100904_2
+ ************************************************************************/
+
+bool CLuaBaseEntity::isClientVersion(const std::string& version) const
+{
+    const auto* PChar = dynamic_cast<CCharEntity*>(m_PBaseEntity);
+    if (!PChar || !PChar->PSession)
+    {
+        return false;
+    }
+
+    if (!compatibility::versionToEpoch(version))
+    {
+        ShowWarningFmt("isClientVersion: invalid version '{}'", version);
+        return false;
+    }
+
+    return PChar->PSession->client.isVersion(version);
+}
+
+/************************************************************************
+ *  Function: isClientVersionAfter()
+ *  Purpose : Returns true if the player's client is newer than a version
+ *  Example : if player:isClientVersionAfter('20100904_2', true) then
+ *  Notes   : A client with no known version is today's, so it is after
+ *          : every version. inclusive also matches the same version.
+ ************************************************************************/
+
+bool CLuaBaseEntity::isClientVersionAfter(const std::string& version, sol::optional<bool> inclusive) const
+{
+    const auto* PChar = dynamic_cast<CCharEntity*>(m_PBaseEntity);
+    if (!PChar || !PChar->PSession)
+    {
+        return false;
+    }
+
+    if (!compatibility::versionToEpoch(version))
+    {
+        ShowWarningFmt("isClientVersionAfter: invalid version '{}'", version);
+        return false;
+    }
+
+    return PChar->PSession->client.isVersionAfter(version, inclusive.value_or(false));
 }
 
 /************************************************************************
@@ -20778,6 +20854,9 @@ void CLuaBaseEntity::Register()
 
     SOL_REGISTER("getObjType", CLuaBaseEntity::getObjType);
     SOL_REGISTER("isPC", CLuaBaseEntity::isPC);
+    SOL_REGISTER("isClientVersionBefore", CLuaBaseEntity::isClientVersionBefore);
+    SOL_REGISTER("isClientVersion", CLuaBaseEntity::isClientVersion);
+    SOL_REGISTER("isClientVersionAfter", CLuaBaseEntity::isClientVersionAfter);
     SOL_REGISTER("isNPC", CLuaBaseEntity::isNPC);
     SOL_REGISTER("isMob", CLuaBaseEntity::isMob);
     SOL_REGISTER("isPet", CLuaBaseEntity::isPet);
